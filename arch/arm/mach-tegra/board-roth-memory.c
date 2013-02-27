@@ -1012,7 +1012,7 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 	{
 		0x41,       /* Rev 4.0.3 */
 		204000,     /* SDRAM frequency */
-		1000,       /* min voltage */
+		900,       /* min voltage */
 		"pll_p",    /* clock source id */
 		0x40000002, /* CLK_SOURCE_EMC */
 		99,         /* number of burst_regs */
@@ -2384,7 +2384,7 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 	{
 		0x41,       /* Rev 4.0.3 */
 		900000,     /* SDRAM frequency */
-		1250,       /* min voltage */
+		1200,       /* min voltage */
 		"pll_m",    /* clock source id */
 		0x80000000, /* CLK_SOURCE_EMC */
 		99,         /* number of burst_regs */
@@ -2441,10 +2441,10 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 			0x00000008, /* EMC_DLL_XFORM_DQS5 */
 			0x00000008, /* EMC_DLL_XFORM_DQS6 */
 			0x00000008, /* EMC_DLL_XFORM_DQS7 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE4 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE5 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE6 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE7 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE4 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE5 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE6 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE7 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS4 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS5 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS6 */
@@ -2499,12 +2499,12 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 			0x00000006, /* EMC_EINPUT_DURATION */
 			0x00000008, /* EMC_DLL_XFORM_DQS0 */
 			0x0000000d, /* EMC_QSAFE */
-			0x00028007, /* EMC_DLL_XFORM_QUSE0 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE0 */
 			0x00000016, /* EMC_RDV */
 			0x00249249, /* EMC_XM2DQSPADCTRL4 */
 			0x10410400, /* EMC_XM2DQSPADCTRL3 */
 			0x00004008, /* EMC_DLL_XFORM_DQ0 */
-			0xa0f10f0f, /* EMC_AUTO_CAL_CONFIG */
+			0xa0f10202, /* EMC_AUTO_CAL_CONFIG */
 			0x00000000, /* EMC_DLL_XFORM_ADDR0 */
 			0x00000f0f, /* EMC_XM2CLKPADCTRL2 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS0 */
@@ -2519,9 +2519,9 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 			0x00000000, /* EMC_DLI_TRIM_TXDQS1 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS2 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS3 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE1 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE2 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE3 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE1 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE2 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE3 */
 		},
 		{
 			0x00000000, /* EMC_CDB_CNTL_1 */
@@ -2531,7 +2531,7 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 			0x00000006, /* EMC_EINPUT_DURATION */
 			0x00000008, /* EMC_DLL_XFORM_DQS0 */
 			0x0000000d, /* EMC_QSAFE */
-			0x00028007, /* EMC_DLL_XFORM_QUSE0 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE0 */
 			0x00000016, /* EMC_RDV */
 			0x00249249, /* EMC_XM2DQSPADCTRL4 */
 			0x10410400, /* EMC_XM2DQSPADCTRL3 */
@@ -2551,9 +2551,9 @@ static struct tegra11_emc_table p2454_h5tc4g63afr_pba_table[] = {
 			0x00000000, /* EMC_DLI_TRIM_TXDQS1 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS2 */
 			0x00000000, /* EMC_DLI_TRIM_TXDQS3 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE1 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE2 */
-			0x00028007, /* EMC_DLL_XFORM_QUSE3 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE1 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE2 */
+			0x00018007, /* EMC_DLL_XFORM_QUSE3 */
 		},
 		{
 			0x000001cd, /* MC_PTSA_GRANT_DECREMENT */
