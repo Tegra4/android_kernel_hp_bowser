@@ -23,10 +23,11 @@
 #define MAX_DB_INDEX 15
 #define PRESET_DEFAULT 4
 struct tfa9887_priv {
-        struct regmap *regmap;
-        int irq;
-        bool deviceInit;
+	struct regmap *regmap;
+	int irq;
+	bool deviceInit;
 	struct mutex lock;
+	char* speaker_data;
 };
 
 typedef enum Tfa9887_Mute {
@@ -71,7 +72,7 @@ int Tfa9887_SetEq(void);
 
 int SetEq(struct tfa9887_priv *tfa9887,struct tfa9887_priv *tfa9887_byte);
 
-int Tfa9887_SetPreset(unsigned int preset);
+int Tfa9887_SetVolume(unsigned int index);
 
 int SetPreset(struct tfa9887_priv *tfa9887,struct tfa9887_priv *tfa9887_byte);
 
