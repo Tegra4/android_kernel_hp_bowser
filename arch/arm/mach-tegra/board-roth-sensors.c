@@ -204,6 +204,28 @@ static struct i2c_board_info roth_i2c4_nct1008_board_info[] = {
 	}
 
 /* MPU board file definition	*/
+static struct mpu_platform_data mpu9150_gyro_data = {
+	.int_config	= 0x10,
+	.level_shifter	= 0,
+	/* Located in board_[platformname].h */
+	.orientation	= MPU_GYRO_ORIENTATION,
+	.sec_slave_type	= SECONDARY_SLAVE_TYPE_COMPASS,
+	.sec_slave_id	= COMPASS_ID_AK8975,
+	.secondary_i2c_addr	= MPU_COMPASS_ADDR,
+	.secondary_read_reg	= 0x06,
+	.secondary_orientation	= MPU_COMPASS_ORIENTATION,
+	.key		= {0x4E, 0xCC, 0x7E, 0xEB, 0xF6, 0x1E, 0x35, 0x22,
+			   0x00, 0x34, 0x0D, 0x65, 0x32, 0xE9, 0x94, 0x89},
+};
+
+static struct i2c_board_info __initdata inv_mpu9150_i2c1_board_info[] = {
+	{
+		I2C_BOARD_INFO(MPU9150_GYRO_NAME, MPU_GYRO_ADDR),
+		.platform_data = &mpu9150_gyro_data,
+	},
+};
+
+/* MPU board file definition	*/
 static struct mpu_platform_data mpu6050_gyro_data = {
 	.int_config	= 0x10,
 	.level_shifter	= 0,
@@ -214,9 +236,9 @@ static struct mpu_platform_data mpu6050_gyro_data = {
 			   0x00, 0x34, 0x0D, 0x65, 0x32, 0xE9, 0x94, 0x89},
 };
 
-static struct i2c_board_info __initdata inv_mpu6050_i2c2_board_info[] = {
+static struct i2c_board_info __initdata inv_mpu6050_i2c1_board_info[] = {
 	{
-		I2C_BOARD_INFO(MPU_GYRO_NAME, MPU_GYRO_ADDR),
+		I2C_BOARD_INFO(MPU6050_GYRO_NAME, MPU_GYRO_ADDR),
 		.platform_data = &mpu6050_gyro_data,
 	},
 };
@@ -226,28 +248,59 @@ static void mpuirq_init(void)
 	int ret = 0;
 	unsigned gyro_irq_gpio = MPU_GYRO_IRQ_GPIO;
 	unsigned gyro_bus_num = MPU_GYRO_BUS_NUM;
-	char *gyro_name = MPU_GYRO_NAME;
+	char *gyro_name;
+	struct board_info board_info;
+
+	tegra_get_board_info(&board_info);
 
 	pr_info("*** MPU START *** mpuirq_init...\n");
 
-	ret = gpio_request(gyro_irq_gpio, gyro_name);
+	if (board_info.board_id == BOARD_P2560) {
+		gyro_name = MPU9150_GYRO_NAME;
 
-	if (ret < 0) {
-		pr_err("%s: gpio_request failed %d\n", __func__, ret);
-		return;
-	}
+		ret = gpio_request(gyro_irq_gpio, gyro_name);
+		if (ret < 0) {
+			pr_err("%s: gpio_request failed %d\n", __func__, ret);
+			return;
+		}
 
-	ret = gpio_direction_input(gyro_irq_gpio);
-	if (ret < 0) {
-		pr_err("%s: gpio_direction_input failed %d\n", __func__, ret);
-		gpio_free(gyro_irq_gpio);
-		return;
+		ret = gpio_direction_input(gyro_irq_gpio);
+		if (ret < 0) {
+			pr_err("%s: gpio_direction_input failed %d\n",
+							__func__, ret);
+			gpio_free(gyro_irq_gpio);
+			return;
+		}
+
+		inv_mpu9150_i2c1_board_info[0].irq
+					= gpio_to_irq(MPU_GYRO_IRQ_GPIO);
+		i2c_register_board_info(gyro_bus_num,
+				inv_mpu9150_i2c1_board_info,
+				ARRAY_SIZE(inv_mpu9150_i2c1_board_info));
+	} else {
+		gyro_name = MPU6050_GYRO_NAME;
+
+		ret = gpio_request(gyro_irq_gpio, gyro_name);
+		if (ret < 0) {
+			pr_err("%s: gpio_request failed %d\n", __func__, ret);
+			return;
+		}
+
+		ret = gpio_direction_input(gyro_irq_gpio);
+		if (ret < 0) {
+			pr_err("%s: gpio_direction_input failed %d\n",
+							__func__, ret);
+			gpio_free(gyro_irq_gpio);
+			return;
+		}
+
+		inv_mpu6050_i2c1_board_info[0].irq =
+					gpio_to_irq(MPU_GYRO_IRQ_GPIO);
+		i2c_register_board_info(gyro_bus_num,
+				inv_mpu6050_i2c1_board_info,
+				ARRAY_SIZE(inv_mpu6050_i2c1_board_info));
 	}
 	pr_info("*** MPU END *** mpuirq_init...\n");
-
-	inv_mpu6050_i2c2_board_info[0].irq = gpio_to_irq(MPU_GYRO_IRQ_GPIO);
-	i2c_register_board_info(gyro_bus_num, inv_mpu6050_i2c2_board_info,
-		ARRAY_SIZE(inv_mpu6050_i2c2_board_info));
 }
 
 static int roth_nct1008_init(void)
