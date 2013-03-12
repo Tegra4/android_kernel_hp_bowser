@@ -122,7 +122,7 @@ struct bq2419x_charger_platform_data bq2419x_charger_pdata = {
 	.rtc_alarm_time = 3600,
 };
 
-struct max17048_battery_model max17048_mdata = {
+struct max17048_battery_model max17048_mdata_p2454 __initdata = {
 	.rcomp		= 152,
 	.soccheck_A	= 206,
 	.soccheck_B	= 208,
@@ -147,14 +147,38 @@ struct max17048_battery_model max17048_mdata = {
 	},
 };
 
+struct max17048_battery_model max17048_mdata_p2560 __initdata = {
+	.rcomp		= 110,
+	.soccheck_A	= 242,
+	.soccheck_B	= 244,
+	.bits		= 19,
+	.alert_threshold = 0x00,
+	.one_percent_alerts = 0x40,
+	.alert_on_reset = 0x40,
+	.rcomp_seg	= 0x0080,
+	.hibernate	= 0x3080,
+	.vreset		= 0x3c96,
+	.valert		= 0xD4AA,
+	.ocvtest	= 55792,
+	.data_tbl = {
+		0x98, 0x80, 0x9B, 0xD0, 0xA7, 0xD0, 0xAA, 0x90,
+		0xB2, 0x70, 0xB6, 0xC0, 0xBB, 0x50, 0xBB, 0xC0,
+		0xBC, 0x30, 0xBC, 0x90, 0xBD, 0x10, 0xBF, 0x90,
+		0xC2, 0xF0, 0xC7, 0x00, 0xCB, 0x70, 0xCF, 0xF0,
+		0x00, 0xE0, 0x00, 0x40, 0x00, 0x40, 0x0D, 0x80,
+		0x0A, 0xA0, 0x0A, 0x20, 0x71, 0xD0, 0x73, 0x00,
+		0x7B, 0x90, 0x7D, 0x20, 0x15, 0xE0, 0x1A, 0xE0,
+		0x17, 0x20, 0x11, 0x20, 0x11, 0x00, 0x11, 0x00,
+	},
+};
+
 struct max17048_platform_data max17048_pdata = {
-	.model_data = &max17048_mdata,
 };
 
 static struct i2c_board_info __initdata max17048_boardinfo[] = {
 	{
 		I2C_BOARD_INFO("max17048", 0x36),
-		.platform_data	= &max17048_pdata,
+		.platform_data  = &max17048_pdata,
 	},
 };
 
@@ -738,6 +762,12 @@ int __init roth_regulator_init(void)
 	roth_cl_dvfs_init();
 #endif
 	tegra_get_board_info(&board_info);
+
+	if (board_info.board_id == BOARD_P2560)
+		max17048_pdata.model_data = &max17048_mdata_p2560;
+	else
+		max17048_pdata.model_data = &max17048_mdata_p2454;
+
 	roth_palmas_regulator_init();
 
 	bq2419x_boardinfo[0].irq = gpio_to_irq(TEGRA_GPIO_PJ0);
