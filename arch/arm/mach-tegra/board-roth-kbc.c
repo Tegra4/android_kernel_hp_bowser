@@ -75,6 +75,32 @@ static struct gpio_keys_button roth_p2454_keys[] = {
 	},
 };
 
+static struct gpio_keys_button roth_p2560_keys[] = {
+	[0] = GPIO_KEY(KEY_POWER, PQ0, 1),
+	[1] = GPIO_KEY(KEY_VOLUMEUP, PR2, 0),
+	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PR1, 0),
+	[3] = {
+		.code = KEY_WAKEUP,
+		.gpio = TEGRA_GPIO_PI5,
+		.irq = -1,
+		.type = EV_KEY,
+		.desc = "Controller",
+		.active_low = 0,
+		.wakeup = 1,
+		.debounce_interval = 10,
+	},
+	[4] = {
+		.code = SW_LID,
+		.gpio = TEGRA_GPIO_HALL,
+		.irq = -1,
+		.type = EV_SW,
+		.desc = "Hall Effect Sensor",
+		.active_low = 1,
+		.wakeup = 1,
+		.debounce_interval = 0,
+	},
+};
+
 static int roth_wakeup_key(void)
 {
 	int wakeup_key;
@@ -84,6 +110,8 @@ static int roth_wakeup_key(void)
 
 	if (status & (1ULL << TEGRA_WAKE_GPIO_PQ0))
 		wakeup_key = KEY_POWER;
+	else if (status & (1ULL << TEGRA_WAKE_GPIO_PI5))
+		wakeup_key = KEY_WAKEUP;
 	else if (status & (1ULL << TEGRA_WAKE_GPIO_PS0))
 		wakeup_key = SW_LID;
 	else
@@ -91,6 +119,20 @@ static int roth_wakeup_key(void)
 
 	return wakeup_key;
 }
+
+static struct gpio_keys_platform_data roth_p2560_keys_pdata = {
+	.buttons	= roth_p2560_keys,
+	.nbuttons	= ARRAY_SIZE(roth_p2560_keys),
+	.wakeup_key	= roth_wakeup_key,
+};
+
+static struct platform_device roth_p2560_keys_device = {
+	.name	= "gpio-keys",
+	.id	= 0,
+	.dev	= {
+		.platform_data  = &roth_p2560_keys_pdata,
+	},
+};
 
 static struct gpio_keys_platform_data roth_p2454_keys_pdata = {
 	.buttons	= roth_p2454_keys,
@@ -108,7 +150,15 @@ static struct platform_device roth_p2454_keys_device = {
 
 int __init roth_kbc_init(void)
 {
-	platform_device_register(&roth_p2454_keys_device);
+	struct board_info board_info;
+
+	tegra_get_board_info(&board_info);
+
+	if (board_info.board_id == BOARD_P2560)
+		platform_device_register(&roth_p2560_keys_device);
+	else
+		platform_device_register(&roth_p2454_keys_device);
+
 	return 0;
 }
 
