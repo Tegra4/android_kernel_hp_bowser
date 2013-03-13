@@ -751,6 +751,13 @@ int __init roth_regulator_init(void)
 
 int __init roth_suspend_init(void)
 {
+	struct board_info board_info;
+
+	tegra_get_board_info(&board_info);
+
+	if (board_info.board_id == BOARD_P2454 && board_info.fab == 0x1)
+		roth_suspend_data.suspend_mode = TEGRA_SUSPEND_LP2;
+
 	tegra_init_suspend(&roth_suspend_data);
 	return 0;
 }
