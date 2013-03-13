@@ -98,7 +98,7 @@ static __initdata struct tegra_pingroup_config roth_pinmux_common[] = {
 	DEFAULT_PINMUX(GMI_RST_N,      GMI,         PULL_UP,    NORMAL, INPUT),
 
 	/* EXTPERIPH2 pinmux */
-	DEFAULT_PINMUX(CLK2_OUT,      EXTPERIPH2,  NORMAL,    NORMAL,   OUTPUT),
+	DEFAULT_PINMUX(CLK2_OUT,      EXTPERIPH2,  NORMAL,    NORMAL,   INPUT),
 
 	/* SDMMC1 pinmux */
 	DEFAULT_PINMUX(SDMMC1_CLK,    SDMMC1,      NORMAL,    NORMAL,   INPUT),

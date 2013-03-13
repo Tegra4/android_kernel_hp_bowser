@@ -676,10 +676,40 @@ struct spi_board_info rm31080a_roth_spi_board[1] = {
 	 },
 };
 
+static int __init roth_touch_get_platform_id(void)
+{
+	int platform_id;
+	int strap1, strap2;
+	struct board_info board_info;
+
+	tegra_get_board_info(&board_info);
+
+	if (board_info.board_id == BOARD_P2560) {
+		/* touch panel has straps on PI3 and PW5 for vendor */
+		strap1 = gpio_get_value(TEGRA_GPIO_PI3);
+		strap2 = gpio_get_value(TEGRA_GPIO_PW5);
+
+		switch (strap1 | (strap2 << 1)) {
+		case 0x00:
+		case 0x01:
+		case 0x10:
+		case 0x11:
+		default:
+				platform_id = RM_PLATFORM_R005;
+				break;
+		}
+
+	} else
+		platform_id = RM_PLATFORM_R005;
+
+
+	return platform_id;
+}
+
 static int __init roth_touch_init(void)
 {
 	tegra_clk_init_from_table(touch_clk_init_table);
-	rm31080ts_roth_data.platform_id = RM_PLATFORM_R005;
+	rm31080ts_roth_data.platform_id = roth_touch_get_platform_id();
 	rm31080a_roth_spi_board[0].irq =
 		gpio_to_irq(TOUCH_GPIO_IRQ_RAYDIUM_SPI);
 	touch_init_raydium(TOUCH_GPIO_IRQ_RAYDIUM_SPI,
