@@ -426,6 +426,8 @@ int __init roth_sdhci_init(void)
 	int boot_vcore_mv;
 	int speedo;
 
+	if (tegra_sdhci_platform_data3.uhs_mask & MMC_MASK_HS200)
+		tegra_sdhci_platform_data3.trim_delay = 0;
 	nominal_core_mv =
 		tegra_dvfs_rail_get_nominal_millivolts(tegra_core_rail);
 	if (nominal_core_mv > 0) {
