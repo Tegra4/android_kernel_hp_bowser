@@ -22,6 +22,7 @@
 #include <linux/platform_device.h>
 #include <linux/resource.h>
 #include <linux/io.h>
+#include <linux/wakelock.h>
 #include <linux/regulator/machine.h>
 #include <linux/regulator/driver.h>
 #include <linux/regulator/fixed.h>
@@ -56,6 +57,9 @@
 
 #define PMC_CTRL		0x0
 #define PMC_CTRL_INTR_LOW	(1 << 17)
+
+/* Wake_lock for A01 Boards */
+struct wake_lock roth_wake_lock;
 
 /* TPS51632 DC-DC converter */
 static struct regulator_consumer_supply tps51632_dcdc_supply[] = {
@@ -785,8 +789,10 @@ int __init roth_suspend_init(void)
 
 	tegra_get_board_info(&board_info);
 
-	if (board_info.board_id == BOARD_P2454 && board_info.fab == 0x1)
-		roth_suspend_data.suspend_mode = TEGRA_SUSPEND_LP2;
+	if (board_info.board_id == BOARD_P2454 && board_info.fab == 0x1) {
+		wake_lock_init(&roth_wake_lock, WAKE_LOCK_SUSPEND, "roth-a01");
+		wake_lock(&roth_wake_lock);
+	}
 
 	tegra_init_suspend(&roth_suspend_data);
 	return 0;
