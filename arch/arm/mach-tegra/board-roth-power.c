@@ -124,6 +124,7 @@ struct bq2419x_charger_platform_data bq2419x_charger_pdata = {
 	.num_consumer_supplies = ARRAY_SIZE(bq2419x_batt_supply),
 	.wdt_timeout	= 40,
 	.rtc_alarm_time = 3600,
+	.chg_restart_time = 1800,
 };
 
 struct max17048_battery_model max17048_mdata_p2454 __initdata = {
