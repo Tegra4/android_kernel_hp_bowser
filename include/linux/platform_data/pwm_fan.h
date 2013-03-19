@@ -33,5 +33,6 @@ struct pwm_fan_platform_data {
 	int pwm_id;
 	int step_time;
 	int precision_multiplier;
+	int tach_gpio;
 };
 #endif
