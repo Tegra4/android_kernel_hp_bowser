@@ -920,32 +920,30 @@ int Tfa9887_SetEq(void)
 int Tfa9887_SetVolume(unsigned int index)
 {
 	int error = 0;
-	if (index != vol_index) {
-		vol_index = index;
+	vol_index = index;
 
-		if (tfa9887R) {
-			mutex_lock(&tfa9887R->lock);
-			if (tfa9887R->deviceInit) {
-				if (index == MAX_DB_INDEX)
-					SetMute(tfa9887R, Tfa9887_Mute_Amplifier);
-				else
-					SetMute(tfa9887R, Tfa9887_Mute_Off);
-				error = SetPreset(tfa9887R, tfa9887R_byte);
-			}
-			mutex_unlock(&tfa9887R->lock);
+	if (tfa9887R) {
+		mutex_lock(&tfa9887R->lock);
+		if (tfa9887R->deviceInit) {
+			if (index == MAX_DB_INDEX)
+				SetMute(tfa9887R, Tfa9887_Mute_Amplifier);
+			else
+				SetMute(tfa9887R, Tfa9887_Mute_Off);
+			error = SetPreset(tfa9887R, tfa9887R_byte);
 		}
+		mutex_unlock(&tfa9887R->lock);
+	}
 
-		if (tfa9887L) {
-			mutex_lock(&tfa9887L->lock);
-			if (tfa9887L->deviceInit) {
-				if (index == MAX_DB_INDEX)
-					SetMute(tfa9887L, Tfa9887_Mute_Amplifier);
-				else
-					SetMute(tfa9887L, Tfa9887_Mute_Off);
-				error = SetPreset(tfa9887L, tfa9887L_byte);
-			}
-			mutex_unlock(&tfa9887L->lock);
+	if (tfa9887L) {
+		mutex_lock(&tfa9887L->lock);
+		if (tfa9887L->deviceInit) {
+			if (index == MAX_DB_INDEX)
+				SetMute(tfa9887L, Tfa9887_Mute_Amplifier);
+			else
+				SetMute(tfa9887L, Tfa9887_Mute_Off);
+			error = SetPreset(tfa9887L, tfa9887L_byte);
 		}
+		mutex_unlock(&tfa9887L->lock);
 	}
 	return error;
 }
@@ -1133,7 +1131,6 @@ int SetPreset(struct tfa9887_priv *tfa9887,struct tfa9887_priv *tfa9887_byte)
 	}
 
 	volume_value = volume_curve[vol_index];
-	pr_info("vol_index=%u volume_vlaue=%u\n",vol_index,volume_value);
 	error = Tfa9887_ReadRegister(tfa9887, TFA9887_AUDIO_CONTROL, &value);
     if(error == Tfa9887_Error_Ok) {
             value = (value&0x00FF) | (unsigned int)(volume_value<<8);
@@ -1467,7 +1464,6 @@ static ssize_t tfa9887_vol_store(struct kobject *kobj,
 	ssize_t ret = count;
 	unsigned int index;
 
-	printk("+tfa9887_vol_store: %d, %d\n", *buf, count);
 
 	if (!buf || !count) {
 		ret = -EINVAL;
@@ -1477,7 +1473,6 @@ static ssize_t tfa9887_vol_store(struct kobject *kobj,
 	index = MAX_DB_INDEX - *buf;
 	Tfa9887_SetVolume(index);
 fail:
-	printk("-tfa9887_vol_store: %d\n", count);
 	return ret;
 }
 
