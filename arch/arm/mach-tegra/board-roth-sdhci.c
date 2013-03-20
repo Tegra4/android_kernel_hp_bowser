@@ -38,6 +38,7 @@
 #include "board-roth.h"
 #include "dvfs.h"
 #include "fuse.h"
+#include "tegra-board-id.h"
 
 #define FUSE_CORE_SPEEDO_0	0x134
 #define ROTH_WLAN_PWR	TEGRA_GPIO_PCC5
@@ -425,6 +426,13 @@ int __init roth_sdhci_init(void)
 	int min_vcore_override_mv;
 	int boot_vcore_mv;
 	int speedo;
+
+	struct board_info board_info;
+
+	tegra_get_board_info(&board_info);
+
+	if (board_info.board_id == BOARD_P2560)
+		tegra_sdhci_platform_data0.max_clk_limit = 156000000;
 
 	if (tegra_sdhci_platform_data3.uhs_mask & MMC_MASK_HS200)
 		tegra_sdhci_platform_data3.trim_delay = 0;
