@@ -97,6 +97,9 @@ static __initdata struct tegra_pingroup_config roth_pinmux_common[] = {
 	DEFAULT_PINMUX(GMI_OE_N,      SOC,         NORMAL,    TRISTATE, INPUT),
 	DEFAULT_PINMUX(GMI_RST_N,      GMI,         PULL_UP,    NORMAL, INPUT),
 
+	/* USB controller wakeup pin */
+	DEFAULT_PINMUX(GMI_IORDY,     GMI,         NORMAL,    TRISTATE, INPUT),
+
 	/* EXTPERIPH2 pinmux */
 	DEFAULT_PINMUX(CLK2_OUT,      EXTPERIPH2,  NORMAL,    NORMAL,   INPUT),
 
@@ -292,4 +295,5 @@ static struct gpio_init_pin_info init_gpio_mode_roth_common[] = {
 	GPIO_INIT_PIN_MODE(TEGRA_GPIO_PU6, true, 0),
 	GPIO_INIT_PIN_MODE(TEGRA_GPIO_PN7, true, 0),
 	GPIO_INIT_PIN_MODE(TEGRA_GPIO_PK5, true, 1),
+	GPIO_INIT_PIN_MODE(TEGRA_GPIO_PI5, true, 0),
 };
