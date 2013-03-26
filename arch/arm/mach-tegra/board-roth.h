@@ -77,17 +77,11 @@
 #define TOUCH_GPIO_RST_RAYDIUM_SPI      TEGRA_GPIO_PK4
 
 /* Invensense MPU Definitions */
-#define MPU6050_GYRO_NAME	"mpu6050"
-#define MPU9150_GYRO_NAME       "mpu9150"
+#define MPU_GYRO_NAME		"mpu6050"
 #define MPU_GYRO_IRQ_GPIO       TEGRA_GPIO_PR3
 #define MPU_GYRO_ADDR           0x68
 #define MPU_GYRO_BUS_NUM        0
 #define MPU_GYRO_ORIENTATION    { 0, 1, 0, 0, 0, 1, 1, 0, 0 }
-#define MPU_COMPASS_NAME        "ak8975"
-#define MPU_COMPASS_IRQ_GPIO    0
-#define MPU_COMPASS_ADDR        0x0C
-#define MPU_COMPASS_BUS_NUM     0
-#define MPU_COMPASS_ORIENTATION { 1, 0, 0, 0, -1, 0, 0, 0, -1 }
 
 
 int roth_regulator_init(void);
