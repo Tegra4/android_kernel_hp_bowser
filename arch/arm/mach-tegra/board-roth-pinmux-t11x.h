@@ -223,7 +223,7 @@ static __initdata struct tegra_pingroup_config roth_pinmux_common[] = {
 	DEFAULT_PINMUX(GPIO_X7_AUD,   RSVD0,        PULL_UP,   NORMAL, INPUT),
 
 	/* Battery charging */
-	DEFAULT_PINMUX(GMI_ADV_N,   GMI,        NORMAL,   NORMAL, INPUT),
+	DEFAULT_PINMUX(GMI_ADV_N,   GMI,        NORMAL,   TRISTATE, INPUT),
 	DEFAULT_PINMUX(GMI_CS0_N,   GMI,        PULL_UP,  NORMAL, INPUT),
 
 	/*Fan PWM*/
