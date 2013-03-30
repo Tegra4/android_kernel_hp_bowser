@@ -507,9 +507,9 @@ static struct therm_fan_est_data fan_est_data_p2560 = {
 			},
 	},
 	.cdev_type = "pwm-fan",
-	.active_trip_temps = {0, 72000, 83000, 120000, 130000,
+	.active_trip_temps = {0, 60000, 73000, 83000, 130000,
 				140000, 150000, 160000, 170000, 180000},
-	.active_hysteresis = {0, 10000, 6000, 0, 0, 0, 0, 0, 0, 0},
+	.active_hysteresis = {0, 10000, 7000, 7000, 0, 0, 0, 0, 0, 0},
 };
 
 static struct platform_device roth_fan_therm_est_device_p2560 = {

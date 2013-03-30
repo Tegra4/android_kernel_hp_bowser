@@ -52,17 +52,17 @@ static struct pwm_fan_platform_data fan_data_delta_6k = {
 	.active_steps = MAX_ACTIVE_STATES,
 	.active_rpm = {
 		0, 1000, 2000, 3000, 4000, 5000, 6000, 7000, 10000, 11000},
-	.active_pwm = {0, 107*1024, 150*1024 , 230*1024, 235*1024, 240*1024,
+	.active_pwm = {0, 89*1024, 107*1024 , 150*1024, 235*1024, 240*1024,
 				245*1024, 250*1024, 252*1024, 255*1024},
 	.active_rru = {1024*40, 1024*2, 1024, 256,
 						256, 256, 256, 256, 256, 256},
 	.active_rrd = {1024*40, 1024*2, 1024, 256, 256,
 						256, 256, 128, 128, 128},
-	.state_cap_lookup = {1, 1, 1, 1, 1, 1, 1, 2, 2, 2},
+	.state_cap_lookup = {2, 2, 2, 2, 2, 2, 2, 3, 3, 3},
 	.pwm_period = 256,
 	.pwm_id = 0,
 	.step_time = 100, /*msecs*/
-	.state_cap = 1,
+	.state_cap = 2,
 	.precision_multiplier = 1024,
 	.tach_gpio = TEGRA_GPIO_PU2,
 };
