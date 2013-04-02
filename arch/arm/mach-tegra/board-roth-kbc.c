@@ -61,8 +61,8 @@
 /* Make KEY_POWER to index 0 only */
 static struct gpio_keys_button roth_p2454_keys[] = {
 	[0] = GPIO_KEY(KEY_POWER, PQ0, 1),
-	[1] = GPIO_KEY(KEY_VOLUMEUP, PR2, 0),
-	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PR1, 0),
+	[1] = GPIO_KEY(KEY_BACK, PR2, 0),
+	[2] = GPIO_KEY(KEY_HOME, PR1, 0),
 	[3] = {
 		.code = SW_LID,
 		.gpio = TEGRA_GPIO_HALL,
@@ -77,8 +77,8 @@ static struct gpio_keys_button roth_p2454_keys[] = {
 
 static struct gpio_keys_button roth_p2560_keys[] = {
 	[0] = GPIO_KEY(KEY_POWER, PQ0, 1),
-	[1] = GPIO_KEY(KEY_VOLUMEUP, PR2, 0),
-	[2] = GPIO_KEY(KEY_VOLUMEDOWN, PR1, 0),
+	[1] = GPIO_KEY(KEY_BACK, PR2, 0),
+	[2] = GPIO_KEY(KEY_HOME, PR1, 0),
 	[3] = {
 		.code = KEY_WAKEUP,
 		.gpio = TEGRA_GPIO_PI5,
