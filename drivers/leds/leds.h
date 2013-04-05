@@ -32,6 +32,20 @@ static inline int led_get_brightness(struct led_classdev *led_cdev)
 	return led_cdev->brightness;
 }
 
+
+static inline void led_set_enable(struct led_classdev *led_cdev,
+					enum led_enable value)
+{
+	led_cdev->enable = value;
+	if (!(led_cdev->flags & LED_SUSPENDED))
+		led_cdev->enable_set(led_cdev, value);
+}
+
+static inline int led_get_enable(struct led_classdev *led_cdev)
+{
+	return led_cdev->enable;
+}
+
 extern struct rw_semaphore leds_list_lock;
 extern struct list_head leds_list;
 

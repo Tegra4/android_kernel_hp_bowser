@@ -28,11 +28,17 @@ enum led_brightness {
 	LED_FULL	= 255,
 };
 
+enum led_enable {
+	LED_ENABLE	= 1,
+	LED_DISABLE	= 0,
+};
+
 struct led_classdev {
 	const char		*name;
 	int			 brightness;
 	int			 max_brightness;
 	int			 flags;
+	int			enable;
 
 	/* Lower 16 bits reflect status */
 #define LED_SUSPENDED		(1 << 0)
@@ -45,6 +51,10 @@ struct led_classdev {
 					  enum led_brightness brightness);
 	/* Get LED brightness level */
 	enum led_brightness (*brightness_get)(struct led_classdev *led_cdev);
+
+	void		(*enable_set)(struct led_classdev *led_cdev,
+					enum led_enable enable);
+	enum led_enable		(*enable_get)(struct led_classdev *led_cdev);
 
 	/*
 	 * Activate hardware accelerated blink, delays are in milliseconds
@@ -111,6 +121,9 @@ extern void led_blink_set(struct led_classdev *led_cdev,
  */
 extern void led_brightness_set(struct led_classdev *led_cdev,
 			       enum led_brightness brightness);
+
+extern void led_enable_set(struct led_classdev *led_cdev,
+				enum led_enable enable);
 
 /*
  * LED Triggers
