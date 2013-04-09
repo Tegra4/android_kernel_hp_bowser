@@ -115,7 +115,7 @@ static int roth_wakeup_key(void)
 	else if (status & (1ULL << TEGRA_WAKE_GPIO_PS0))
 		wakeup_key = SW_LID;
 	else
-		wakeup_key = KEY_RESERVED;
+		wakeup_key = -1;
 
 	return wakeup_key;
 }
