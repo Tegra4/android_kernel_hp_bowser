@@ -273,8 +273,12 @@ static int __apply_cluster_config(int state, int target_state)
 	} else if (target_state == TEGRA_CPQ_LP && no_lp != 1 &&
 			num_online_cpus() == 1) {
 
+		/* Margin of 30Mhz is required since max_lp_clk is 816Mhz
+		 * which will round up to 817Mhz on the G cluster, and
+		 * cause us to fail switching to the LP cluster because
+		 * the frequency is too high */
 		speed = min((unsigned long)tegra_getspeed(0),
-			    clk_get_max_rate(cpu_lp_clk) / 1000);
+			    clk_get_max_rate(cpu_lp_clk) / 1000 - 30000);
 		tegra_update_cpu_speed(speed);
 
 		if (!tegra_cluster_switch(cpu_clk, cpu_lp_clk)) {
