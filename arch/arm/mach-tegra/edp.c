@@ -39,6 +39,10 @@ static unsigned int regulator_cur;
 /* Value to subtract from regulator current limit */
 static unsigned int edp_reg_override_mA = OVERRIDE_DEFAULT;
 
+/* mode to skip volt_temp_cap: 0: normal,  1: no-limit */
+static unsigned char edp_volt_temp_mode;
+static unsigned char edp_volt_temp_mode_new;
+
 static const unsigned int *system_edp_limits;
 
 static struct tegra_system_edp_entry *power_edp_limits;
@@ -419,7 +423,8 @@ static unsigned int edp_calculate_maxf(
 		voltage_mV = freq_voltage_lut[f].voltage_mV;
 
 		/* Constrain Volt-Temp. Eg. at Tj >= 70C, no VDD_CPU > 1.24V */
-		if (temp_C > params->volt_temp_cap.temperature &&
+		if (edp_volt_temp_mode == 0 &&
+		    temp_C > params->volt_temp_cap.temperature &&
 		    voltage_mV > params->volt_temp_cap.voltage_limit_mV)
 			continue;
 
@@ -1030,8 +1035,9 @@ static int edp_debugfs_show(struct seq_file *s, void *data)
 
 static int edp_reg_override_show(struct seq_file *s, void *data)
 {
-	seq_printf(s, "Limit override: %u mA. Effective limit: %u mA\n",
-		   edp_reg_override_mA, regulator_cur - edp_reg_override_mA);
+	seq_printf(s, "Limit override: %u mA. Real limit: %u mA (mode %u)\n",
+		   edp_reg_override_mA, regulator_cur - edp_reg_override_mA,
+		   edp_volt_temp_mode);
 	return 0;
 }
 
@@ -1189,6 +1195,45 @@ vdd_cpu_dir_err:
 edp_dir_err:
 	return -ENOMEM;
 }
+
+int tegra_edp_volt_temp_mode_set(const char *arg, const struct kernel_param *kp)
+{
+	int ret;
+
+	ret = param_set_bool(arg, kp);
+	if (ret)
+		return ret;
+
+	if (edp_volt_temp_mode_new == edp_volt_temp_mode)
+		return 0;
+
+	edp_volt_temp_mode = edp_volt_temp_mode_new;
+	if (init_cpu_edp_limits_calculated())
+		pr_err("FAILED: Reinitialize VDD_CPU EDP table\n");
+
+	if (tegra_cpu_set_speed_cap(NULL)) {
+		pr_err("FAILED: Set CPU freq cap with new VDD_CPU EDP table\n");
+		return 0;
+	}
+
+	pr_info("Reinitialized VDD_CPU EDP table with volt_temp mode %u\n",
+		edp_volt_temp_mode);
+
+	return 0;
+}
+
+int tegra_edp_volt_temp_mode_get(char *buffer, const struct kernel_param *kp)
+{
+	return param_get_bool(buffer, kp);
+}
+
+static struct kernel_param_ops tegra_edp_volt_temp_mode_ops = {
+	.set = tegra_edp_volt_temp_mode_set,
+	.get = tegra_edp_volt_temp_mode_get,
+};
+
+module_param_cb(edp_volt_temp_mode, &tegra_edp_volt_temp_mode_ops,
+	&edp_volt_temp_mode_new, 0644);
 
 late_initcall(tegra_edp_debugfs_init);
 #endif /* CONFIG_DEBUG_FS */
