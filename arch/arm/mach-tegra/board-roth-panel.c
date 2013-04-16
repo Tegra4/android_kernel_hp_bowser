@@ -1035,7 +1035,7 @@ int __init roth_panel_init(int board_id)
 	tegra_get_board_info(&board_info);
 
 	if (board_info.board_id == BOARD_P2560)
-		roth_disp2_out.hdmi_out = &roth_hdmi_out,
+		roth_disp2_out.hdmi_out = &roth_hdmi_out;
 
 	err = tegra_init_hdmi(&roth_disp2_device, phost1x);
 	if (err)
