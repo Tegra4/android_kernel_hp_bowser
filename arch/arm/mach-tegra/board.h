@@ -196,6 +196,7 @@ void tegra_get_joystick_board_info(struct board_info *bi);
 void tegra_get_rightspeaker_board_info(struct board_info *bi);
 void tegra_get_leftspeaker_board_info(struct board_info *bi);
 int tegra_get_board_panel_id(void);
+int tegra_get_touch_panel_id(void);
 
 int get_core_edp(void);
 bool is_pike_supported(void);

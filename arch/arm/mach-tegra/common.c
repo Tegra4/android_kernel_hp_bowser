@@ -132,6 +132,7 @@ static   bool is_tegra_debug_uart_hsport;
 static struct board_info pmu_board_info;
 static struct board_info display_board_info;
 static int panel_id;
+static int touch_panel_id;
 static struct board_info camera_board_info;
 static struct board_info io_board_info;
 static struct board_info button_board_info;
@@ -936,6 +937,18 @@ static int __init tegra_board_power_config(char *options)
 	return 1;
 }
 __setup("power-config=", tegra_board_power_config);
+
+int tegra_get_touch_panel_id(void)
+{
+	return touch_panel_id;
+}
+static int __init tegra_touch_panel_id(char *options)
+{
+	char *p = options;
+	touch_panel_id = memparse(p, &p);
+	return touch_panel_id;
+}
+__setup("touch_panel_id=", tegra_touch_panel_id);
 
 enum power_supply_type get_power_supply_type(void)
 {
