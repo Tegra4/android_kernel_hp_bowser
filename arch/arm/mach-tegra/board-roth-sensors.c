@@ -284,12 +284,6 @@ static int roth_nct1008_init(void)
 	return ret;
 }
 
-static struct i2c_board_info __initdata bq20z45_pdata[] = {
-	{
-		I2C_BOARD_INFO("sbs-battery", 0x0B),
-	},
-};
-
 #ifdef CONFIG_TEGRA_SKIN_THROTTLE
 static struct thermal_trip_info skin_trips[] = {
 	{
@@ -547,10 +541,6 @@ int __init roth_sensors_init(void)
 	mpuirq_init();
 
 	roth_fan_est_init();
-
-	if (0)
-		i2c_register_board_info(0, bq20z45_pdata,
-			ARRAY_SIZE(bq20z45_pdata));
 
 	return 0;
 }
