@@ -1243,34 +1243,51 @@ EXPORT_SYMBOL(Tfa9887_Powerdown);
 int Powerdown(struct tfa9887_priv *tfa9887, struct tfa9887_priv *tfa9887_byte, int powerdown)
 {
 	int error;
-	unsigned int value;
+	unsigned int audioctrl_value = 0;
+	unsigned int sysctrl_value = 0;
 
 	/* read the SystemControl register, modify the bit and write again */
-	error = Tfa9887_ReadRegister(tfa9887, TFA9887_SYSTEM_CONTROL, &value);
-	if (error != Tfa9887_Error_Ok) {
+	error = Tfa9887_ReadRegister(tfa9887, TFA9887_SYSTEM_CONTROL, &sysctrl_value);
+	if (error != Tfa9887_Error_Ok)
 		return error;
-        }
 
 	switch(powerdown) {
 		case 1:
-			value |= TFA9887_SYSCTRL_POWERDOWN;
-			SetMute(tfa9887,Tfa9887_Mute_Amplifier);
+			sysctrl_value &= ~TFA9887_SYSCTRL_ENBL_AMP;
+			sysctrl_value |= TFA9887_SYSCTRL_SEL_ENBL_AMP;
+			error = Tfa9887_WriteRegister(tfa9887, TFA9887_SYSTEM_CONTROL,
+										sysctrl_value);
+			msleep(50);
+			sysctrl_value |= TFA9887_SYSCTRL_POWERDOWN;
+			error = Tfa9887_WriteRegister(tfa9887, TFA9887_SYSTEM_CONTROL,
+											sysctrl_value);
+			msleep(10);
 			break;
-                case 0:
-			value &= ~(TFA9887_SYSCTRL_POWERDOWN);
+		case 0:
+			sysctrl_value |= TFA9887_SYSCTRL_ENBL_AMP;
+			sysctrl_value |= TFA9887_SYSCTRL_SEL_ENBL_AMP;
+			sysctrl_value &= ~(TFA9887_SYSCTRL_POWERDOWN);
+			error = Tfa9887_WriteRegister(tfa9887, TFA9887_SYSTEM_CONTROL,
+											sysctrl_value);
+			error = Tfa9887_ReadRegister(tfa9887, TFA9887_AUDIO_CONTROL,
+											&audioctrl_value);
+			if (error != Tfa9887_Error_Ok)
+				return error;
+			audioctrl_value |= TFA9887_AUDIOCTRL_MUTE;
+			Tfa9887_WriteRegister(tfa9887, TFA9887_AUDIO_CONTROL,
+									audioctrl_value);
+			preset_mode = 0;
+			SetPreset(tfa9887,tfa9887_byte);
+			SetEq(tfa9887,tfa9887_byte);
+			audioctrl_value &= ~(TFA9887_AUDIOCTRL_MUTE);
+			Tfa9887_WriteRegister(tfa9887, TFA9887_AUDIO_CONTROL,
+									audioctrl_value);
 			break;
-                default:
-                return -1;
-        }
-        error = Tfa9887_WriteRegister(tfa9887, TFA9887_SYSTEM_CONTROL, value);
-	if(!powerdown) {
-		SetMute(tfa9887,Tfa9887_Mute_Off);
-		preset_mode = 0;
-		SetPreset(tfa9887,tfa9887_byte);
-		SetEq(tfa9887,tfa9887_byte);
+		default:
+			error = -1;
+			break;
 	}
-
-        return error;
+	return error;
 }
 
 int SetMute(struct tfa9887_priv *tfa9887, Tfa9887_Mute_t mute)

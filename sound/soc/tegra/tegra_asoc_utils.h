@@ -49,6 +49,7 @@ struct tegra_asoc_utils_data {
 	int avp_device_id;
 	unsigned int avp_dma_addr;
 	int headset_plug_state;
+	int tfa9887_powerdown;
 };
 
 int tegra_asoc_utils_set_rate(struct tegra_asoc_utils_data *data, int srate,
