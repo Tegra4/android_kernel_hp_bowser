@@ -948,7 +948,7 @@ static int __init tegra_touch_panel_id(char *options)
 	touch_panel_id = memparse(p, &p);
 	return touch_panel_id;
 }
-__setup("touch_panel_id=", tegra_touch_panel_id);
+__setup("tp_id=", tegra_touch_panel_id);
 
 enum power_supply_type get_power_supply_type(void)
 {
