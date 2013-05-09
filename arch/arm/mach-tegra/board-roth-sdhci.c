@@ -145,9 +145,6 @@ static struct tegra_sdhci_platform_data tegra_sdhci_platform_data0 = {
 		.built_in = 0,
 		.ocr_mask = MMC_OCR_1V8_MASK,
 	},
-#ifndef CONFIG_MMC_EMBEDDED_SDIO
-	.pm_flags = MMC_PM_KEEP_POWER,
-#endif
 	.cd_gpio = -1,
 	.wp_gpio = -1,
 	.power_gpio = -1,
