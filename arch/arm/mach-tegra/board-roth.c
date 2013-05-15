@@ -434,7 +434,7 @@ static struct issp_platform_data roth_issp_pdata_p2560 = {
 	.blocks		= 128,
 	.security_size	= 64,
 	.version_addr	= 0x0286,
-	.force_update	= 0,
+	.force_update	= 1,
 };
 
 static struct platform_device roth_issp_device_p2560 = {
