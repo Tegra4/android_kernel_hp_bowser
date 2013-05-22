@@ -1616,11 +1616,13 @@ static int tegra_rt5640_init(struct snd_soc_pcm_runtime *rtd)
 	if (ret < 0)
 		return ret;
 
-	ret = snd_ctl_add(machine->util_data.card->snd_card,
+	if (machine_is_roth()) {
+		ret = snd_ctl_add(machine->util_data.card->snd_card,
 			snd_ctl_new1(&tegra_tfa9887_controls, &machine->util_data));
-	if (ret < 0) {
-		dev_err(card->dev, "Can't add tfa9887 alsa control");
-		return ret;
+		if (ret < 0) {
+			dev_err(card->dev, "Can't add tfa9887 alsa control");
+			return ret;
+		}
 	}
 
 	/* FIXME: Calculate automatically based on DAPM routes? */
