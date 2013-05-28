@@ -467,8 +467,8 @@ static int tegra_rt5640_hw_params(struct snd_pcm_substream *substream,
 			srate, params_channels(params), sample_size,
 			srate, params_channels(params), sample_size);
 
-	if(machine_is_roth()) {
-		if(initTfa == 1) {
+	if (machine_is_roth()) {
+		if (initTfa == 1) {
 			i2s_tfa = i2s;
 			tegra_asoc_enable_clocks();
 			pr_info("INIT TFA\n");
@@ -1314,7 +1314,6 @@ static int tegra_rt5640_event_int_spk(struct snd_soc_dapm_widget *w,
 	int *edp_vol = pdata->edp_vol;
 	int ret;
 
-	machine->speaker_sel = 1;
 	if (machine->spk_reg) {
 		if (SND_SOC_DAPM_EVENT_ON(event)) {
 			regulator_enable(machine->spk_reg);
@@ -1324,15 +1323,24 @@ static int tegra_rt5640_event_int_spk(struct snd_soc_dapm_widget *w,
 		}
 	}
 
-	if(machine_is_roth()) {
-		if (SND_SOC_DAPM_EVENT_ON(event)) {
-			if(i2s_tfa && !machine->tfa9887_on) {
-				if (codec_rt)
-					snd_soc_update_bits(codec_rt, RT5640_PWR_DIG1, 0x0001, 0x0000);
+	if (machine_is_roth()) {
+		if (i2s_tfa) {
+			if (SND_SOC_DAPM_EVENT_ON(event)) {
+			    machine->speaker_sel = 1;
+				if (!machine->tfa9887_on) {
+					if (codec_rt)
+						snd_soc_update_bits(codec_rt,
+							RT5640_PWR_DIG1, 0x0001, 0x0000);
+					tegra_asoc_enable_clocks();
+					Tfa9887_Powerdown(0);
+					tegra_asoc_disable_clocks();
+					machine->tfa9887_on = 1;
+				}
+			} else {
 				tegra_asoc_enable_clocks();
-				Tfa9887_Powerdown(0);
+				Tfa9887_Powerdown(1);
 				tegra_asoc_disable_clocks();
-				machine->tfa9887_on = 1;
+				machine->tfa9887_on = 0;
 			}
 		}
 	}
@@ -1386,6 +1394,17 @@ static int tegra_rt5640_event_hp(struct snd_soc_dapm_widget *w,
 			tpa6130a2_stereo_enable(codec, 0);
 #endif
 	machine->speaker_sel = 0;
+	if (machine_is_roth()) {
+		if (i2s_tfa) {
+			if (SND_SOC_DAPM_EVENT_ON(event)) {
+				tegra_asoc_enable_clocks();
+				Tfa9887_Powerdown(1);
+				tegra_asoc_disable_clocks();
+				machine->tfa9887_on = 0;
+			}
+		}
+	}
+
 	if (!(machine->gpio_requested & GPIO_HP_MUTE))
 		return 0;
 
@@ -1488,7 +1507,6 @@ static int tegra_set_tfa9887_powerdown(struct snd_kcontrol *kcontrol,
 	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(card);
 
 	data->tfa9887_powerdown = ucontrol->value.integer.value[0];
-	//printk("tegra_set_tfa9887_powerdown powerdown=%d ref=%d\n",data->tfa9887_powerdown,i2s_tfa->playback_ref_count);
 	if (i2s_tfa && (i2s_tfa->playback_ref_count <= 1)) {
 		Tfa9887_Powerdown(data->tfa9887_powerdown);
 		machine->tfa9887_on = !data->tfa9887_powerdown;
@@ -1706,7 +1724,7 @@ static int tegra_rt5640_set_bias_level(struct snd_soc_card *card,
 	struct snd_soc_dapm_context *dapm, enum snd_soc_bias_level level)
 {
 	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(card);
-	//printk("tegra_rt5640_set_bias_level level =%d spkr_sel=%d\n",level,machine->speaker_sel);
+
 	if (machine->bias_level == SND_SOC_BIAS_OFF &&
 		level != SND_SOC_BIAS_OFF && (!machine->clock_enabled)) {
 		machine->clock_enabled = 1;
@@ -1714,11 +1732,11 @@ static int tegra_rt5640_set_bias_level(struct snd_soc_card *card,
 		machine->bias_level = level;
 	}
 
-    if(machine_is_roth()) {
+    if (machine_is_roth()) {
 	    if (machine->speaker_sel &&
 		    !machine->tfa9887_on &&
 		    level > machine->bias_level) {
-		    if(i2s_tfa) {
+		    if (i2s_tfa) {
 			    if (codec_rt)
 				    snd_soc_update_bits(codec_rt, RT5640_PWR_DIG1, 0x0001, 0x0000);
 			    tegra_asoc_enable_clocks();
@@ -1727,7 +1745,15 @@ static int tegra_rt5640_set_bias_level(struct snd_soc_card *card,
 			    machine->tfa9887_on = 1;
 		    }
 	    }
-    }
+		if (level == SND_SOC_BIAS_OFF) {
+			if (i2s_tfa) {
+				tegra_asoc_enable_clocks();
+				Tfa9887_Powerdown(1);
+				tegra_asoc_disable_clocks();
+				machine->tfa9887_on = 0;
+			}
+		}
+	}
 	return 0;
 }
 
