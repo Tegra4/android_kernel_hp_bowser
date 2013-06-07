@@ -1489,7 +1489,7 @@ static int tegra_set_tfa9887_powerdown(struct snd_kcontrol *kcontrol,
 
 	data->tfa9887_powerdown = ucontrol->value.integer.value[0];
 	//printk("tegra_set_tfa9887_powerdown powerdown=%d ref=%d\n",data->tfa9887_powerdown,i2s_tfa->playback_ref_count);
-	if (i2s_tfa->playback_ref_count <= 1) {
+	if (i2s_tfa && (i2s_tfa->playback_ref_count <= 1)) {
 		Tfa9887_Powerdown(data->tfa9887_powerdown);
 		machine->tfa9887_on = !data->tfa9887_powerdown;
 	}
