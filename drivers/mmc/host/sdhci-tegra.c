@@ -1874,12 +1874,17 @@ static int sdhci_tegra_issue_tuning_cmd(struct sdhci_host *sdhci)
 {
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
 	struct sdhci_tegra *tegra_host = pltfm_host->priv;
+	const struct tegra_sdhci_platform_data *plat = tegra_host->plat;
 	int err = 0;
 	u8 ctrl;
 	u32 mask;
 	unsigned int timeout = 10;
 	int flags;
 	u32 intstatus;
+
+	if (gpio_is_valid(plat->cd_gpio)
+			&& (gpio_get_value(plat->cd_gpio) != 0))
+		return -ENODEV;
 
 	mask = SDHCI_CMD_INHIBIT | SDHCI_DATA_INHIBIT;
 	while (sdhci_readl(sdhci, SDHCI_PRESENT_STATE) & mask) {
@@ -1942,7 +1947,7 @@ static int sdhci_tegra_issue_tuning_cmd(struct sdhci_host *sdhci)
 	} else {
 		tegra_sdhci_reset(sdhci, SDHCI_RESET_CMD);
 		tegra_sdhci_reset(sdhci, SDHCI_RESET_DATA);
-		err = -EIO;
+		err = -EAGAIN;
 	}
 
 	if (sdhci->tuning_done) {
@@ -1952,7 +1957,7 @@ static int sdhci_tegra_issue_tuning_cmd(struct sdhci_host *sdhci)
 			(ctrl & SDHCI_CTRL_TUNED_CLK))
 			err = 0;
 		else
-			err = -EIO;
+			err = -EAGAIN;
 	}
 	mdelay(1);
 out:
@@ -1972,6 +1977,8 @@ static int sdhci_tegra_scan_tap_values(struct sdhci_host *sdhci,
 
 		/* Run frequency tuning */
 		err = sdhci_tegra_issue_tuning_cmd(sdhci);
+		if (err == -ENODEV)
+			return err;
 		if (err && retry) {
 			retry--;
 			continue;
