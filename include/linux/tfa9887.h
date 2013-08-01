@@ -88,6 +88,11 @@ int checkMTPEX(struct tfa9887_priv *tfa9887);
 
 void setOtc(struct tfa9887_priv *tfa9887, unsigned short otcOn);
 
+int Tfa9887_setSampleRate(int sRate);
+
+int setSampleRate(struct tfa9887_priv *tfa9887, int sRate);
+
+
 typedef enum Tfa9887_AmpInputSel {
 	Tfa9887_AmpInputSel_I2SLeft,
 	Tfa9887_AmpInputSel_I2SRight,

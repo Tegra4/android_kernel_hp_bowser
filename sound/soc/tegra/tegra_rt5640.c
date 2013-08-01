@@ -373,7 +373,8 @@ static int tegra_rt5640_hw_params(struct snd_pcm_substream *substream,
 	struct tegra30_i2s *i2s = snd_soc_dai_get_drvdata(cpu_dai);
 	int srate, mclk, sample_size, i2s_daifmt;
 	int err, rate;
-	static unsigned initTfa = 0;
+	static unsigned int initTfa;
+	static int tfasrate;
 
 	switch (params_format(params)) {
 	case SNDRV_PCM_FORMAT_S16_LE:
@@ -473,7 +474,13 @@ static int tegra_rt5640_hw_params(struct snd_pcm_substream *substream,
 			tegra_asoc_enable_clocks();
 			pr_info("INIT TFA\n");
 			Tfa9887_Init(srate);
+			tfasrate = srate;
 			tegra_asoc_disable_clocks();
+		} else if (initTfa > 1) {
+			if (srate != tfasrate) {
+				Tfa9887_setSampleRate(srate);
+				tfasrate = srate;
+			}
 		}
 		initTfa++;
 	}

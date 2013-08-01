@@ -948,6 +948,72 @@ int Tfa9887_SetVolume(unsigned int index)
 	return error;
 }
 
+int Tfa9887_setSampleRate(int sRate)
+{
+	if (tfa9887R) {
+		mutex_lock(&tfa9887R->lock);
+		if (tfa9887R->deviceInit)
+			setSampleRate(tfa9887R, sRate);
+		mutex_unlock(&tfa9887R->lock);
+	}
+	if (tfa9887L) {
+		mutex_lock(&tfa9887L->lock);
+		if (tfa9887L->deviceInit)
+			setSampleRate(tfa9887L, sRate);
+		mutex_unlock(&tfa9887L->lock);
+	}
+}
+
+int setSampleRate(struct tfa9887_priv *tfa9887, int sRate)
+{
+
+	int error;
+	unsigned int value;
+
+	/*Set Sampling Frequency*/
+
+	error = Tfa9887_ReadRegister(tfa9887, TFA9887_I2S_CONTROL, &value);
+	if (error == Tfa9887_Error_Ok) {
+		/* clear the 4 bits first*/
+		value &= (~(0xF<<TFA9887_I2SCTRL_RATE_SHIFT));
+		switch (sRate) {
+		case 48000:
+			value |= TFA9887_I2SCTRL_RATE_48000;
+			break;
+		case 44100:
+			value |= TFA9887_I2SCTRL_RATE_44100;
+			break;
+		case 32000:
+			value |= TFA9887_I2SCTRL_RATE_32000;
+			break;
+		case 24000:
+			value |= TFA9887_I2SCTRL_RATE_24000;
+			break;
+		case 22050:
+			value |= TFA9887_I2SCTRL_RATE_22050;
+			break;
+		case 16000:
+			value |= TFA9887_I2SCTRL_RATE_16000;
+			break;
+		case 12000:
+			value |= TFA9887_I2SCTRL_RATE_12000;
+			break;
+		case 11025:
+			value |= TFA9887_I2SCTRL_RATE_11025;
+			break;
+		case 8000:
+			value |= TFA9887_I2SCTRL_RATE_08000;
+			break;
+		default:
+			pr_info("unsupported samplerate\n");
+			error = -1;
+			return error;
+		}
+		error = Tfa9887_WriteRegister(tfa9887,
+				TFA9887_I2S_CONTROL, value);
+	}
+}
+
 int coldStartup(struct tfa9887_priv *tfa9887, struct tfa9887_priv *tfa9887_byte, int sRate)
 {
 	int error,volume_value;
