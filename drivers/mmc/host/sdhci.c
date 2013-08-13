@@ -2,7 +2,7 @@
  *  linux/drivers/mmc/host/sdhci.c - Secure Digital Host Controller Interface driver
  *
  *  Copyright (C) 2005-2008 Pierre Ossman, All Rights Reserved.
- *  Copyright (c) 2013, NVIDIA CORPORATION. All Rights Reserved.
+ *  Copyright (c) 2013-2014, NVIDIA CORPORATION. All Rights Reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -2044,6 +2044,9 @@ int sdhci_enable(struct mmc_host *mmc)
 	unsigned int approved;
 	int ret;
 	struct platform_device *pdev = to_platform_device(mmc_dev(host->mmc));
+#ifdef CONFIG_MMC_FREQ_SCALING
+	unsigned long freq = 0;
+#endif
 
 	if (!mmc->card || mmc->card->type == MMC_TYPE_SDIO)
 		return 0;
