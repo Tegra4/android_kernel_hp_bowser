@@ -1344,9 +1344,7 @@ static int tegra_rt5640_event_int_spk(struct snd_soc_dapm_widget *w,
 					machine->tfa9887_on = 1;
 				}
 			} else {
-				tegra_asoc_enable_clocks();
 				Tfa9887_Powerdown(1);
-				tegra_asoc_disable_clocks();
 				machine->tfa9887_on = 0;
 			}
 		}
@@ -1404,9 +1402,7 @@ static int tegra_rt5640_event_hp(struct snd_soc_dapm_widget *w,
 	if (machine_is_roth()) {
 		if (i2s_tfa) {
 			if (SND_SOC_DAPM_EVENT_ON(event)) {
-				tegra_asoc_enable_clocks();
 				Tfa9887_Powerdown(1);
-				tegra_asoc_disable_clocks();
 				machine->tfa9887_on = 0;
 			}
 		}
@@ -1754,9 +1750,7 @@ static int tegra_rt5640_set_bias_level(struct snd_soc_card *card,
 	    }
 		if (level == SND_SOC_BIAS_OFF) {
 			if (i2s_tfa) {
-				tegra_asoc_enable_clocks();
 				Tfa9887_Powerdown(1);
-				tegra_asoc_disable_clocks();
 				machine->tfa9887_on = 0;
 			}
 		}
