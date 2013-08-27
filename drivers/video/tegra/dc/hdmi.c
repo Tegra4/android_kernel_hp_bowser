@@ -1070,6 +1070,18 @@ static void tegra_dc_hdmi_suspend(struct tegra_dc *dc)
 	struct tegra_dc_hdmi_data *hdmi = tegra_dc_get_outdata(dc);
 	unsigned long flags;
 
+	if (dc->out->flags & TEGRA_DC_OUT_HOTPLUG_WAKE_LP0) {
+		int wake_irq = gpio_to_irq(dc->out->hotplug_gpio);
+		int ret;
+
+		ret = enable_irq_wake(wake_irq);
+		if (ret < 0) {
+			dev_err(&dc->ndev->dev,
+			"%s: Couldn't enable HDMI wakeup, irq=%d, error=%d\n",
+			__func__, wake_irq, ret);
+		}
+	}
+
 	/* turn off hotplug detection to avoid resume event when +5V falls */
 	tegra_hdmi_hotplug_disable(hdmi);
 	tegra_nvhdcp_suspend(hdmi->nvhdcp);
@@ -1086,6 +1098,9 @@ static void tegra_dc_hdmi_resume(struct tegra_dc *dc)
 	spin_lock_irqsave(&hdmi->suspend_lock, flags);
 	hdmi->suspended = false;
 	spin_unlock_irqrestore(&hdmi->suspend_lock, flags);
+
+	if (dc->out->flags & TEGRA_DC_OUT_HOTPLUG_WAKE_LP0)
+		disable_irq_wake(gpio_to_irq(dc->out->hotplug_gpio));
 
 	tegra_nvhdcp_resume(hdmi->nvhdcp);
 	/* restore hotplug detection */
