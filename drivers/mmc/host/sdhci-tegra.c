@@ -3120,6 +3120,35 @@ static void tegra_sdhci_power_off(struct sdhci_host *sdhci, u8 power_mode)
 	}
 }
 
+/*
+ * The host/device can be powered off before the retuning request is handled in
+ * case of SDIO being powered off if Wifi is turned off, sd card removal etc. In
+ * such cases, cancel the pending tuning timer and remove any core voltage
+ * constraints that are set earlier.
+ */
+
+static void tegra_sdhci_power_off(struct sdhci_host *sdhci, u8 power_mode)
+{
+	int retuning_req_set = 0;
+
+	retuning_req_set = (timer_pending(&sdhci->tuning_timer) ||
+		(sdhci->flags & SDHCI_NEEDS_RETUNING));
+
+	if (retuning_req_set)
+		del_timer_sync(&sdhci->tuning_timer);
+
+	if (retuning_req_set) {
+		if (boot_volt_req_refcount)
+			--boot_volt_req_refcount;
+		if (!boot_volt_req_refcount) {
+			sdhci_tegra_set_tuning_voltage(sdhci, 0);
+			SDHCI_TEGRA_DBG(
+				"%s:Host is off. Remove vcore constraints\n",
+				mmc_hostname(sdhci->mmc));
+		}
+	}
+}
+
 static int show_polling_period(void *data, u64 *value)
 {
 	struct sdhci_host *host = (struct sdhci_host *)data;
