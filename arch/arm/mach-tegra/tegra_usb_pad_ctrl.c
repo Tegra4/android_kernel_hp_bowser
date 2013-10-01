@@ -60,7 +60,7 @@ int utmi_phy_pad_enable(void)
 
 	val = readl(pad_base + UTMIP_BIAS_CFG0);
 	val &= ~(UTMIP_OTGPD | UTMIP_BIASPD);
-	val |= UTMIP_HSSQUELCH_LEVEL(0x2) | UTMIP_HSDISCON_LEVEL(0x1) |
+	val |= UTMIP_HSSQUELCH_LEVEL(0x1) | UTMIP_HSDISCON_LEVEL(0x1) |
 		UTMIP_HSDISCON_LEVEL_MSB;
 	writel(val, pad_base + UTMIP_BIAS_CFG0);
 	tegra_usb_pad_reg_update(XUSB_PADCTL_USB2_BIAS_PAD_CTL_0,
