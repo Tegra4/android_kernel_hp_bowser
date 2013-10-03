@@ -29,6 +29,7 @@
 #include <linux/bitrev.h>
 #include <linux/crc16.h>
 #include <linux/crc32.h>
+#include <linux/usb.h>
 #include <linux/usb/usbnet.h>
 #include <linux/slab.h>
 #include "smsc95xx.h"
@@ -85,6 +86,9 @@ static u8 mac_addr[6] = {0};
 static bool smsc_mac_addr_set;
 module_param_array_named(mac_addr, mac_addr, byte, NULL, 0);
 MODULE_PARM_DESC(mac_addr, "SMSC command line MAC address");
+
+static u32 boot_wol_config = 0;
+module_param(boot_wol_config, int, 0644);
 
 static int __must_check __smsc95xx_read_reg(struct usbnet *dev, u32 index,
 					    u32 *data)
@@ -1962,6 +1966,31 @@ static const struct driver_info smsc95xx_info = {
 	.flags		= FLAG_ETHER | FLAG_SEND_ZLP | FLAG_LINK_INTR,
 };
 
+static int smsc95xx_probe(struct usb_interface *udev,
+		const struct usb_device_id *prod)
+{
+	struct usb_device *usb_dev = interface_to_usbdev(udev);
+	int ret;
+
+	ret = usbnet_probe(udev, prod);
+	if (ret < 0)
+		return ret;
+
+	if (boot_wol_config && usb_dev->actconfig->desc.bmAttributes &
+				USB_CONFIG_ATT_WAKEUP) {
+		struct usbnet *dev = usb_get_intfdata(udev);
+		struct ethtool_wolinfo wolinfo = {0};
+
+		wolinfo.wolopts = boot_wol_config;
+		ret = smsc95xx_ethtool_set_wol(dev->net, &wolinfo);
+		if (ret < 0)
+			netdev_warn(dev->net, "unable to set wol config"
+				"%x error %d\n", boot_wol_config, ret);
+	}
+
+	return 0;
+}
+
 static const struct usb_device_id products[] = {
 	{
 		/* SMSC9500 USB Ethernet Device */
@@ -2060,7 +2089,7 @@ MODULE_DEVICE_TABLE(usb, products);
 static struct usb_driver smsc95xx_driver = {
 	.name		= "smsc95xx",
 	.id_table	= products,
-	.probe		= usbnet_probe,
+	.probe		= smsc95xx_probe,
 	.suspend	= smsc95xx_suspend,
 	.resume		= smsc95xx_resume,
 	.reset_resume	= smsc95xx_resume,
