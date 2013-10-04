@@ -37,6 +37,9 @@
 /* Hall Effect Sensor GPIO */
 #define TEGRA_GPIO_HALL		TEGRA_GPIO_PS0
 
+/* Display-related GPIOs */
+#define TEGRA_GPIO_HDMI_HPD		TEGRA_GPIO_PN7
+
 /* Audio-related GPIOs */
 #define TEGRA_GPIO_CDC_IRQ		TEGRA_GPIO_PW3
 #define TEGRA_GPIO_LDO1_EN		TEGRA_GPIO_PV3

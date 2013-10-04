@@ -76,6 +76,7 @@
 #include "gpio-names.h"
 #include "fuse.h"
 #include "pm.h"
+#include "pm-irq.h"
 #include "common.h"
 #include "tegra-board-id.h"
 #include "board-touch-raydium.h"
@@ -834,6 +835,8 @@ static void __init tegra_roth_init(void)
 	tegra_register_fuse();
 	roth_revision_init();
 	roth_issp_init();
+	/* Enable HDMI hotplug as a wakesource */
+	tegra_set_wake_gpio(4, TEGRA_GPIO_HDMI_HPD);
 }
 
 static void __init roth_ramconsole_reserve(unsigned long size)

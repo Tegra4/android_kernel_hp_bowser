@@ -38,6 +38,7 @@
 #include "board.h"
 #include "board-panel.h"
 #include "tegra-board-id.h"
+#include "board-roth.h"
 #include "devices.h"
 #include "gpio-names.h"
 #include "tegra11_host1x_devices.h"
@@ -68,9 +69,6 @@ struct platform_device * __init roth_host1x_init(void)
 #define DSI_PANEL_CE		0
 
 #define DC_CTRL_MODE	TEGRA_DC_OUT_CONTINUOUS_MODE
-
-/* HDMI Hotplug detection pin */
-#define roth_hdmi_hpd	TEGRA_GPIO_PN7
 
 static bool reg_requested;
 static bool gpio_requested;
@@ -525,6 +523,7 @@ fail:
 }
 
 static struct tegra_dc_out roth_disp1_out;
+static struct tegra_dc_out roth_disp2_out;
 
 static int roth_dsi_panel_enable(struct device *dev)
 {
@@ -703,10 +702,12 @@ static int roth_hdmi_disable(void)
 
 static int roth_hdmi_postsuspend(void)
 {
-	if (roth_hdmi_vddio) {
-		regulator_disable(roth_hdmi_vddio);
-		regulator_put(roth_hdmi_vddio);
-		roth_hdmi_vddio = NULL;
+	if (!(roth_disp2_out.flags & TEGRA_DC_OUT_HOTPLUG_WAKE_LP0)) {
+		if (roth_hdmi_vddio) {
+			regulator_disable(roth_hdmi_vddio);
+			regulator_put(roth_hdmi_vddio);
+			roth_hdmi_vddio = NULL;
+		}
 	}
 	return 0;
 }
@@ -777,11 +778,11 @@ struct tegra_hdmi_out roth_hdmi_out = {
 
 static struct tegra_dc_out roth_disp2_out = {
 	.type		= TEGRA_DC_OUT_HDMI,
-	.flags		= TEGRA_DC_OUT_HOTPLUG_HIGH,
+	.flags		= TEGRA_DC_OUT_HOTPLUG_HIGH | TEGRA_DC_OUT_HOTPLUG_WAKE_LP0,
 	.parent_clk	= "pll_d2_out0",
 
 	.dcc_bus	= 3,
-	.hotplug_gpio	= roth_hdmi_hpd,
+	.hotplug_gpio	= TEGRA_GPIO_HDMI_HPD,
 
 	.max_pixclock	= KHZ2PICOS(297000),
 
@@ -1007,8 +1008,8 @@ int __init roth_panel_init(int board_id)
 		return -EINVAL;
 	}
 
-	gpio_request(roth_hdmi_hpd, "hdmi_hpd");
-	gpio_direction_input(roth_hdmi_hpd);
+	gpio_request(TEGRA_GPIO_HDMI_HPD, "hdmi_hpd");
+	gpio_direction_input(TEGRA_GPIO_HDMI_HPD);
 	res = platform_get_resource_byname(&roth_disp1_device,
 					 IORESOURCE_MEM, "fbmem");
 	res->start = tegra_fb_start;
