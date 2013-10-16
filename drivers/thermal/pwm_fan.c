@@ -1,7 +1,7 @@
 /*
  * pwm_fan.c fan driver that is controlled by pwm
  *
- * Copyright (c) 2012-2013 NVIDIA CORPORATION, All rights reserved.
+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
  *
  * Author: Anshul Jain <anshulj@nvidia.com>
  *
@@ -552,30 +552,36 @@ static ssize_t set_fan_state_cap_sysfs(struct device *dev,
 	long val;
 	int ret;
 
+	mutex_lock(&fan_data->fan_state_lock);
 	ret = kstrtol(buf, 10, &val);
 
 	if (ret < 0)
-		return -EINVAL;
+		goto error;
 
-	if (!fan_data)
-		return -EINVAL;
+	if (!fan_data) {
+		dev_err(dev, "%s, fan_data is null\n", __func__);
+		goto error;
+	}
 
 	if (val < 0)
 		val = 0;
 	else if (val >= fan_data->active_steps)
 		val = fan_data->active_steps - 1;
 
-	mutex_lock(&fan_data->fan_state_lock);
 	fan_data->fan_state_cap = val;
 	fan_data->fan_cap_pwm =
 		fan_data->fan_pwm[fan_data->fan_state_cap_lookup[val]];
 	fan_data->next_target_pwm = min(fan_data->fan_cap_pwm,
 					fan_data->next_target_pwm);
-	dev_info(dev, "pwm_cap=%d target_pwm=%d\n",
-		fan_data->fan_cap_pwm, fan_data->next_target_pwm);
+	dev_info(dev, "pwm_cap=%d target_pwm=%d, val=%ld\n",
+		fan_data->fan_cap_pwm, fan_data->next_target_pwm, val);
 
 	mutex_unlock(&fan_data->fan_state_lock);
 	return count;
+
+error:
+	mutex_unlock(&fan_data->fan_state_lock);
+	return -EINVAL;
 }
 
 static DEVICE_ATTR(pwm_cap, S_IWUSR | S_IRUGO, show_fan_pwm_cap_sysfs,
@@ -774,6 +780,10 @@ static int pwm_fan_suspend(struct platform_device *pdev, pm_message_t state)
 	struct fan_dev_data *fan_data = platform_get_drvdata(pdev);
 
 	mutex_lock(&fan_data->fan_state_lock);
+	dev_info(&pdev->dev, "%s, cur_pwm:%d, target_pwm:%d, cap:%d",
+	__func__, fan_data->fan_cur_pwm, fan_data->next_target_pwm,
+	fan_data->fan_cap_pwm);
+
 	cancel_delayed_work(&fan_data->fan_ramp_work);
 	/*Turn the fan off*/
 	fan_data->fan_cur_pwm = 0;
@@ -796,6 +806,10 @@ static int pwm_fan_resume(struct platform_device *pdev)
 
 	/*Start thermal control*/
 	fan_data->fan_temp_control_flag = 1;
+
+	dev_info(&pdev->dev, "%s, cur_pwm:%d, target_pwm:%d, cap:%d",
+	__func__, fan_data->fan_cur_pwm, fan_data->next_target_pwm,
+	fan_data->fan_cap_pwm);
 
 	mutex_unlock(&fan_data->fan_state_lock);
 	return 0;
