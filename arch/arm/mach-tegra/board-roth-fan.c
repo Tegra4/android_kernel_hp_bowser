@@ -46,6 +46,7 @@ static struct pwm_fan_platform_data fan_data_yltc_8k = {
 	.state_cap = 1,
 	.precision_multiplier = 1024,
 	.tach_gpio = -1,
+	.pwm_gpio = TEGRA_GPIO_PU3,
 };
 
 static struct pwm_fan_platform_data fan_data_delta_6k = {
@@ -65,6 +66,7 @@ static struct pwm_fan_platform_data fan_data_delta_6k = {
 	.state_cap = 2,
 	.precision_multiplier = 1024,
 	.tach_gpio = TEGRA_GPIO_PU2,
+	.pwm_gpio = TEGRA_GPIO_PU3,
 };
 
 static struct platform_device pwm_fan_therm_cooling_device_yltc_8k = {
