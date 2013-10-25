@@ -890,7 +890,45 @@ static int spi_tegra_setup(struct spi_device *spi)
 	return 0;
 }
 
+static  int tegra_spi_cs_low(struct spi_device *spi,
+		bool state)
+{
+	struct spi_tegra_data *tspi = spi_master_get_devdata(spi->master);
+	int ret;
+	unsigned long val;
+	unsigned long flags;
+	unsigned int cs_pol_bit[MAX_CHIP_SELECT] = {
+			SPI_CS_POL_INACTIVE_0,
+			SPI_CS_POL_INACTIVE_1,
+			SPI_CS_POL_INACTIVE_2,
+			SPI_CS_POL_INACTIVE_3,
+	};
 
+	BUG_ON(spi->chip_select >= MAX_CHIP_SELECT);
+
+	ret = pm_runtime_get_sync(&tspi->pdev->dev);
+	if (ret < 0) {
+		dev_err(&tspi->pdev->dev, "pm runtime failed, e = %d\n", ret);
+		return ret;
+	}
+	tegra_spi_clk_enable(tspi);
+
+	spin_lock_irqsave(&tspi->lock, flags);
+	if (!(spi->mode & SPI_CS_HIGH)) {
+		val = spi_tegra_readl(tspi, SPI_COMMAND1);
+		if (state)
+			val &= ~cs_pol_bit[spi->chip_select];
+		else
+			val |= cs_pol_bit[spi->chip_select];
+		spi_tegra_writel(tspi, val, SPI_COMMAND1);
+	}
+	spin_unlock_irqrestore(&tspi->lock, flags);
+
+	tegra_spi_clk_disable(tspi);
+	pm_runtime_put_sync(&tspi->pdev->dev);
+
+	return 0;
+}
 
 static int spi_tegra_wait_on_message_xfer(struct spi_tegra_data *tspi)
 {
@@ -1275,6 +1313,7 @@ static int __devinit spi_tegra_probe(struct platform_device *pdev)
 	master->transfer_one_message = tegra_spi_transfer_one_message;
 	master->num_chipselect = MAX_CHIP_SELECT;
 	master->rt = false;
+	master->spi_cs_low  = tegra_spi_cs_low;
 
 	dev_set_drvdata(&pdev->dev, master);
 	tspi = spi_master_get_devdata(master);
