@@ -34,10 +34,16 @@ void oz_hcd_get_desc_cnf(void *hport, u8 req_id, int status,
 void oz_hcd_control_cnf(void *hport, u8 req_id, u8 rcode,
 	u8 *data, int data_len);
 
+void oz_hcd_mark_urb_submitted(void *hport, int ep_ix, u8 req_id);
+
 /* Indication functions.
  */
 void oz_hcd_data_ind(void *hport, u8 endpoint, u8 *data, int data_len);
 
 int oz_hcd_heartbeat(void *hport);
+
+/* Get information.
+ */
+u8 oz_get_up_max_buffer_units(void *hpd);
 
 #endif /* _OZUSBIF_H */
