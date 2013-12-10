@@ -3,7 +3,11 @@
  *
  * OTG transceiver driver for Tegra UTMI phy
  *
+<<<<<<< HEAD
  * Copyright (C) 2010-2013, NVIDIA CORPORATION. All rights reserved.
+=======
+ * Copyright (C) 2010-2013 NVIDIA CORPORATION. All rights reserved.
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
  * Copyright (C) 2010 Google, Inc.
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -33,8 +37,11 @@
 #include <linux/err.h>
 #include <linux/export.h>
 #include <linux/pm_runtime.h>
+<<<<<<< HEAD
 #include <linux/extcon.h>
 #include <linux/gpio.h>
+=======
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 #include <linux/regulator/consumer.h>
 
 #define USB_PHY_WAKEUP		0x408
@@ -57,6 +64,8 @@
 #define DBG(stuff...)	do {} while (0)
 #endif
 
+#define YCABLE_CHARGING_CURRENT_UA 500000u
+
 struct tegra_otg_data {
 	struct platform_device *pdev;
 	struct tegra_usb_otg_data *pdata;
@@ -70,7 +79,14 @@ struct tegra_otg_data {
 	int irq;
 	struct work_struct work;
 	struct regulator *vbus_reg;
+<<<<<<< HEAD
 	unsigned int intr_reg_data;
+=======
+	struct regulator *vbus_bat_reg;
+	unsigned int intr_reg_data;
+	bool support_y_cable;
+	bool y_cable_conn;
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 	bool turn_off_vbus_on_lp0;
 	bool clk_enabled;
 	bool interrupt_mode;
@@ -294,12 +310,28 @@ static void tegra_otg_notify_event(struct tegra_otg_data *tegra, int event)
 	atomic_notifier_call_chain(&tegra->phy.notifier, event, tegra->phy.otg->gadget);
 }
 
+<<<<<<< HEAD
+=======
+static void tegra_otg_set_current(struct regulator *vbus_bat_reg, int max_uA)
+{
+	if (vbus_bat_reg == NULL)
+		return ;
+
+	regulator_set_current_limit(vbus_bat_reg, 0, max_uA);
+}
+
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 static void tegra_otg_vbus_enable(struct regulator *vbus_reg, int on)
 {
 	static int vbus_enable = 1;
 
 	if (vbus_reg == NULL)
 		return ;
+<<<<<<< HEAD
+=======
+	DBG("%s(%d) vbus_enable = %d on = %d\n", __func__, __LINE__,
+				vbus_enable, on);
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 
 	if (on && vbus_enable) {
 		regulator_enable(vbus_reg);
@@ -313,13 +345,33 @@ static void tegra_otg_vbus_enable(struct regulator *vbus_reg, int on)
 static int tegra_otg_start_host(struct tegra_otg_data *tegra, int on)
 {
 	if (on) {
+<<<<<<< HEAD
 		tegra_otg_vbus_enable(tegra->vbus_reg, 1);
+=======
+		if (tegra->support_y_cable &&
+				(tegra->int_status & USB_VBUS_STATUS)) {
+			DBG("%s(%d) set current %dmA\n", __func__, __LINE__,
+					YCABLE_CHARGING_CURRENT_UA/1000);
+			tegra_otg_set_current(tegra->vbus_bat_reg,
+					YCABLE_CHARGING_CURRENT_UA);
+			tegra->y_cable_conn = true;
+		} else {
+			tegra_otg_vbus_enable(tegra->vbus_reg, 1);
+		}
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 		tegra_start_host(tegra);
 		tegra_otg_notify_event(tegra, USB_EVENT_ID);
 	} else {
 		tegra_stop_host(tegra);
 		tegra_otg_notify_event(tegra, USB_EVENT_NONE);
 		tegra_otg_vbus_enable(tegra->vbus_reg, 0);
+<<<<<<< HEAD
+=======
+		if (tegra->support_y_cable && tegra->y_cable_conn) {
+			tegra_otg_set_current(tegra->vbus_bat_reg, 0);
+			tegra->y_cable_conn = false;
+		}
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 	}
 	return 0;
 }
@@ -358,16 +410,35 @@ static void tegra_change_otg_state(struct tegra_otg_data *tegra,
 		pr_info("otg state changed: %s --> %s\n", tegra_state_name(from), tegra_state_name(to));
 
 		if (from == OTG_STATE_A_SUSPEND) {
+<<<<<<< HEAD
 			if (to == OTG_STATE_B_PERIPHERAL && otg->gadget) {
 				tegra_otg_start_gadget(tegra, 1);
 			}
 			else if (to == OTG_STATE_A_HOST) {
 				tegra_otg_start_host(tegra, 1);
 			}
+=======
+			if (to == OTG_STATE_B_PERIPHERAL && otg->gadget)
+				tegra_otg_start_gadget(tegra, 1);
+			else if (to == OTG_STATE_A_HOST)
+				tegra_otg_start_host(tegra, 1);
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 		} else if (from == OTG_STATE_A_HOST && to == OTG_STATE_A_SUSPEND) {
 			tegra_otg_start_host(tegra, 0);
 		} else if (from == OTG_STATE_B_PERIPHERAL && otg->gadget && to == OTG_STATE_A_SUSPEND) {
 			tegra_otg_start_gadget(tegra, 0);
+<<<<<<< HEAD
+=======
+		}
+	}
+
+	if (tegra->support_y_cable && tegra->y_cable_conn &&
+			from == to && from == OTG_STATE_A_HOST) {
+		if (!(tegra->int_status & USB_VBUS_STATUS)) {
+			DBG("%s(%d) Charger disconnect\n", __func__, __LINE__);
+			tegra_otg_set_current(tegra->vbus_bat_reg, 0);
+			tegra_otg_vbus_enable(tegra->vbus_reg, 1);
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 		}
 	}
 }
@@ -604,9 +675,17 @@ static int tegra_otg_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, tegra);
 	tegra_clone = tegra;
 	tegra->interrupt_mode = true;
+<<<<<<< HEAD
 	tegra->suspended = true;
 	tegra->turn_off_vbus_on_lp0 =
 			pdata->ehci_pdata->u_data.host.turn_off_vbus_on_lp0;
+=======
+	tegra->suspended = false;
+	tegra->turn_off_vbus_on_lp0 = true;
+	tegra->support_y_cable = true;
+	tegra->y_cable_conn = false;
+
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 	tegra->clk = clk_get(&pdev->dev, NULL);
 	if (IS_ERR(tegra->clk)) {
 		dev_err(&pdev->dev, "Can't get otg clock\n");
@@ -670,6 +749,22 @@ static int tegra_otg_probe(struct platform_device *pdev)
 			"Couldn't enable USB otg mode wakeup, irq=%d, error=%d\n",
 			tegra->irq, err);
 		err = 0;
+	}
+
+	tegra->vbus_reg = regulator_get(&pdev->dev, "usb_vbus");
+	if (IS_ERR_OR_NULL(tegra->vbus_reg)) {
+		pr_err("failed to get regulator usb_vbus: %ld\n",
+				PTR_ERR(tegra->vbus_reg));
+		tegra->vbus_reg = NULL;
+	}
+
+	if (tegra->support_y_cable) {
+		tegra->vbus_bat_reg = regulator_get(&pdev->dev, "usb_bat_chg");
+		if (IS_ERR_OR_NULL(tegra->vbus_bat_reg)) {
+			pr_err("failed to get regulator usb_bat_chg: %ld\n",
+					PTR_ERR(tegra->vbus_bat_reg));
+			tegra->vbus_bat_reg = NULL;
+		}
 	}
 
 	INIT_WORK(&tegra->work, irq_work);
@@ -738,10 +833,17 @@ err_id_irq_req:
 	if (gpio_is_valid(tegra->id_det_gpio))
 		gpio_free(tegra->id_det_gpio);
 err_clk:
+<<<<<<< HEAD
 	if (gpio_is_valid(tegra->id_det_gpio))
 		free_irq(gpio_to_irq(tegra->id_det_gpio), tegra);
 	if (tegra->vbus_reg)
 		regulator_put(tegra->vbus_reg);
+=======
+	if (tegra->vbus_reg)
+		regulator_put(tegra->vbus_reg);
+	if (tegra->support_y_cable && tegra->vbus_bat_reg)
+		regulator_put(tegra->vbus_bat_reg);
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 
 	return err;
 }
@@ -753,6 +855,7 @@ static int __exit tegra_otg_remove(struct platform_device *pdev)
 	if (tegra->vbus_reg)
 		regulator_put(tegra->vbus_reg);
 
+<<<<<<< HEAD
 	if (tegra->support_gpio_id && gpio_is_valid(tegra->id_det_gpio)) {
 		free_irq(gpio_to_irq(tegra->id_det_gpio), tegra);
 		gpio_free(tegra->id_det_gpio);
@@ -763,6 +866,10 @@ static int __exit tegra_otg_remove(struct platform_device *pdev)
 	if (tegra->support_pmu_vbus)
 		extcon_unregister_notifier(tegra->vbus_extcon_dev,
 							&otg_vbus_nb);
+=======
+	if (tegra->support_y_cable && tegra->vbus_bat_reg)
+		regulator_put(tegra->vbus_bat_reg);
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 
 	pm_runtime_disable(tegra->phy.dev);
 	usb_set_transceiver(NULL);
@@ -826,6 +933,7 @@ static void tegra_otg_resume(struct device *dev)
 
 	/* Detect cable status after LP0 for all detection types */
 
+<<<<<<< HEAD
 	if (tegra->support_usb_id || !tegra->support_pmu_vbus) {
 		/* Clear pending interrupts  */
 		pm_runtime_get_sync(dev);
@@ -858,6 +966,30 @@ static void tegra_otg_resume(struct device *dev)
 		tegra_otg_vbus_enable(tegra->vbus_reg, 1);
 
 	/* Call work to set appropriate state */
+=======
+	/* Enable interrupt and call work to set to appropriate state */
+	spin_lock_irqsave(&tegra->lock, flags);
+	if (tegra->builtin_host)
+		tegra->int_status = val | USB_INT_EN;
+	else
+		tegra->int_status = val | USB_VBUS_INT_EN | USB_VBUS_WAKEUP_EN |
+			USB_ID_PIN_WAKEUP_EN;
+	spin_unlock_irqrestore(&tegra->lock, flags);
+
+	if (tegra->turn_off_vbus_on_lp0 &&
+		!(tegra->int_status & USB_ID_STATUS)) {
+		/* Handle Y-cable */
+		if (tegra->support_y_cable &&
+				(tegra->int_status & USB_VBUS_STATUS)) {
+			tegra_otg_set_current(tegra->vbus_bat_reg,
+				YCABLE_CHARGING_CURRENT_UA);
+			tegra->y_cable_conn = true;
+		} else {
+			tegra_otg_vbus_enable(tegra->vbus_reg, 1);
+		}
+	}
+
+>>>>>>> 00c1fe4... usb: otg: tegra: add support for OTG Y-cable
 	schedule_work(&tegra->work);
 
 	enable_interrupt(tegra, true);
