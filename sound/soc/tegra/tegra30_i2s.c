@@ -51,6 +51,7 @@
 
 #define DRV_NAME "tegra30-i2s"
 
+extern int tegra_i2sloopback_func;
 static struct tegra30_i2s  i2scont[TEGRA30_NR_I2S_IFC];
 
 static inline void tegra30_i2s_write(struct tegra30_i2s *i2s, u32 reg, u32 val)
@@ -524,6 +525,11 @@ static int tegra30_i2s_hw_params(struct snd_pcm_substream *substream,
 
 	bitcnt = sample_size;
 	i = 0;
+	/* I2S loopback*/
+	if (tegra_i2sloopback_func)
+		i2s->reg_ctrl |= TEGRA30_I2S_CTRL_LPBK_ENABLE;
+	else
+		i2s->reg_ctrl &= ~TEGRA30_I2S_CTRL_LPBK_ENABLE;
 
 	/* TDM mode */
 	if ((i2s->reg_ctrl & TEGRA30_I2S_CTRL_FRAME_FORMAT_FSYNC) &&
@@ -965,7 +971,8 @@ static int tegra30_i2s_probe(struct snd_soc_dai *dai)
 	i2s->dsp_config.rx_mask = 1;
 	i2s->dsp_config.rx_data_offset = 1;
 	i2s->dsp_config.tx_data_offset = 1;
-
+	tegra_i2sloopback_func = 0;
+	i2s->reg_ctrl &= ~TEGRA30_I2S_CTRL_LPBK_ENABLE;
 
 	return 0;
 }
