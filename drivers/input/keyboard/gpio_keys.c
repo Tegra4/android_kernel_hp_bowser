@@ -817,13 +817,8 @@ static int gpio_keys_suspend(struct device *dev)
 
 static int gpio_keys_resume(struct device *dev)
 {
-	struct platform_device *pdev = to_platform_device(dev);
 	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
-	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
-	int wakeup_key = KEY_RESERVED;
 	int i;
-	if (pdata->wakeup_key)
-		wakeup_key = pdata->wakeup_key();
 
 	for (i = 0; i < ddata->n_buttons; i++) {
 		struct gpio_button_data *bdata = &ddata->data[i];
@@ -838,9 +833,41 @@ static int gpio_keys_resume(struct device *dev)
 
 	return 0;
 }
-#endif
 
-static SIMPLE_DEV_PM_OPS(gpio_keys_pm_ops, gpio_keys_suspend, gpio_keys_resume);
+static int gpio_keys_suspend_noirq(struct device *dev)
+{
+	return 0;
+}
+
+static int gpio_keys_resume_noirq(struct device *dev)
+{
+	struct platform_device *pdev = to_platform_device(dev);
+	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
+	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
+	int wakeup_key = KEY_RESERVED;
+	int i;
+	if (pdata->wakeup_key)
+		wakeup_key = pdata->wakeup_key();
+
+	if (device_may_wakeup(dev)) {
+		for (i = 0; i < ddata->n_buttons; i++) {
+			struct gpio_button_data *bdata = &ddata->data[i];
+			if (bdata->button->wakeup &&
+				wakeup_key == bdata->button->code)
+				gpio_keys_gpio_report_wake(bdata);
+		}
+	}
+
+	return 0;
+}
+
+static const struct dev_pm_ops gpio_keys_pm_ops = {
+	.suspend = gpio_keys_suspend,
+	.resume = gpio_keys_resume,
+	.suspend_noirq = gpio_keys_suspend_noirq,
+	.resume_noirq = gpio_keys_resume_noirq,
+};
+#endif
 
 static struct platform_driver gpio_keys_device_driver = {
 	.probe		= gpio_keys_probe,
@@ -848,7 +875,9 @@ static struct platform_driver gpio_keys_device_driver = {
 	.driver		= {
 		.name	= "gpio-keys",
 		.owner	= THIS_MODULE,
+#ifdef CONFIG_PM_SLEEP
 		.pm	= &gpio_keys_pm_ops,
+#endif
 		.of_match_table = gpio_keys_of_match,
 	}
 };
