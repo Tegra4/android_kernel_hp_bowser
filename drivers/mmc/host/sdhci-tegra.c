@@ -459,6 +459,7 @@ struct sdhci_tegra {
 	struct tegra_tuning_data tuning_data[DFS_FREQ_COUNT];
 	bool is_parent_pllc;
 	struct tegra_freq_gov_data *gov_data;
+	bool power_off_rail;
 	int speedo;
 };
 
@@ -3793,6 +3794,9 @@ static int __devinit sdhci_tegra_probe(struct platform_device *pdev)
 	/* Enable async suspend/resume to reduce LP0 latency */
 	device_enable_async_suspend(&pdev->dev);
 
+	if (plat->power_off_rail)
+		tegra_host->power_off_rail = true;
+
 	return 0;
 
 err_add_host:
@@ -3875,6 +3879,9 @@ static void tegra_sdhci_shutdown(struct platform_device *pdev)
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(host);
 	struct sdhci_tegra *tegra_host = pltfm_host->priv;
 	int err;
+
+	if (!tegra_host->power_off_rail)
+		return;
 
 	err = tegra_sdhci_configure_regulators(tegra_host,
 						CONFIG_REG_DIS, 0, 0);
