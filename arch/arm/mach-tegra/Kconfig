@@ -1009,4 +1009,10 @@ config TEGRA_HDMI_PRIMARY
 	  Configure system to support HDMI as the primary display.
 	  When enabled, dispA/fb0 will be configured to use HDMI.
 
+config TEGRA_SET_DCP_CURRENT_LIMIT_2A
+	bool "set 2A when DCP charger is connected"
+	default n
+	help
+	  When enabled, we can use 2A charging with DCP charger, but it is
+	  violation of BC 1.2 spec
 endif
