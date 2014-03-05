@@ -73,7 +73,6 @@ struct cm3217_info {
 	int polling_delay;
 
 	struct mutex enable_lock;
-	struct mutex disable_lock;
 	struct mutex get_adc_lock;
 
 	struct regulator *vdd;
@@ -280,9 +279,15 @@ static void report_do_work(struct work_struct *work)
 	if (enable_log)
 		D("[CM3217] %s\n", __func__);
 
+	mutex_lock(&lpi->enable_lock);
+	if (!lpi->als_enable) {
+		mutex_unlock(&lpi->enable_lock);
+		return;
+	}
 	report_lsensor_input_event(lpi, 0);
 
 	queue_delayed_work(lpi->lp_wq, &report_work, lpi->polling_delay);
+	mutex_unlock(&lpi->enable_lock);
 }
 
 static int als_power(int enable)
@@ -390,7 +395,7 @@ static int lightsensor_disable(struct cm3217_info *lpi)
 	int ret = 0;
 	char cmd = 0;
 
-	mutex_lock(&lpi->disable_lock);
+	mutex_lock(&lpi->enable_lock);
 
 	if (!lpi->als_enable)
 		goto out;
@@ -413,7 +418,7 @@ static int lightsensor_disable(struct cm3217_info *lpi)
 	als_power(0);
 
 out:
-	mutex_unlock(&lpi->disable_lock);
+	mutex_unlock(&lpi->enable_lock);
 
 	als_power(0);
 
@@ -981,7 +986,6 @@ static int cm3217_probe(struct i2c_client *client,
 	lp_info = lpi;
 
 	mutex_init(&lpi->enable_lock);
-	mutex_init(&lpi->disable_lock);
 	mutex_init(&lpi->get_adc_lock);
 
 	ret = lightsensor_setup(lpi);
@@ -1098,7 +1102,6 @@ err_create_class:
 err_cm3217_setup:
 	destroy_workqueue(lpi->lp_wq);
 	mutex_destroy(&lpi->enable_lock);
-	mutex_destroy(&lpi->disable_lock);
 	mutex_destroy(&lpi->get_adc_lock);
 	input_unregister_device(lpi->ls_input_dev);
 	input_free_device(lpi->ls_input_dev);
@@ -1120,7 +1123,6 @@ static int __devexit cm3217_remove(struct i2c_client *client)
 	class_destroy(lpi->cm3217_class);
 	destroy_workqueue(lpi->lp_wq);
 	mutex_destroy(&lpi->enable_lock);
-	mutex_destroy(&lpi->disable_lock);
 	mutex_destroy(&lpi->get_adc_lock);
 	input_unregister_device(lpi->ls_input_dev);
 	input_free_device(lpi->ls_input_dev);
