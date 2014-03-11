@@ -1989,6 +1989,10 @@ static __devinit int tegra_rt5640_driver_probe(struct platform_device *pdev)
 	}
 #endif
 
+#ifdef CONFIG_SND_SOC_TI_TPA6130A2
+	tpa6130a2_add_controls(card->rtd[DAI_LINK_HIFI].codec);
+#endif
+
 	if (!pdata->edp_support)
 		return 0;
 
@@ -2036,9 +2040,6 @@ static __devinit int tegra_rt5640_driver_probe(struct platform_device *pdev)
 			machine->spk_edp_client = NULL;
 		}
 	}
-#ifdef CONFIG_SND_SOC_TI_TPA6130A2
-	tpa6130a2_add_controls(card->rtd[DAI_LINK_HIFI].codec);
-#endif
 	return 0;
 
 err_unregister_card:
