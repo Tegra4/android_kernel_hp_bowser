@@ -552,7 +552,6 @@ static int tegra_bt_sco_hw_params(struct snd_pcm_substream *substream,
 			dev_err(card->dev, "Can't configure i2s format\n");
 			return -EINVAL;
 	}
-
 	err = snd_soc_dai_set_fmt(rtd->cpu_dai, i2s_daifmt);
 	if (err < 0) {
 		dev_err(card->dev, "cpu_dai fmt not set\n");
@@ -1117,7 +1116,6 @@ static void tegra_bt_voice_call_shutdown(struct snd_pcm_substream *substream)
 	struct snd_soc_pcm_runtime *rtd = substream->private_data;
 	struct tegra_rt5640 *machine  =
 			snd_soc_card_get_drvdata(rtd->codec->card);
-
 #ifndef CONFIG_ARCH_TEGRA_2x_SOC
 	machine->codec_info[BT_SCO].rate = 0;
 	machine->codec_info[BT_SCO].channels = 0;
@@ -1684,6 +1682,7 @@ static struct snd_soc_dai_link tegra_rt5640_dai[NUM_DAI_LINKS] = {
 		.codec_dai_name = "dit-hifi",
 		.init = tegra_rt5640_init,
 		.ops = &tegra_rt5640_bt_sco_ops,
+		.ignore_pmdown_time = 1,
 	},
 	[DAI_LINK_VOICE_CALL] = {
 		.name = "VOICE CALL",
@@ -1703,6 +1702,7 @@ static struct snd_soc_dai_link tegra_rt5640_dai[NUM_DAI_LINKS] = {
 		.cpu_dai_name = "dit-hifi",
 		.codec_dai_name = "dit-hifi",
 		.ops = &tegra_bt_voice_call_ops,
+		.ignore_pmdown_time = 1,
 	},
 };
 
