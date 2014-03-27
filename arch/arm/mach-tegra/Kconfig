@@ -365,6 +365,12 @@ config MACH_TEGRATAB
        help
          Support for NVIDIA TEGRATAB development platform
 
+config FAIRFAX_CAMERA
+       bool "FAIRFAX CAMERA PARAMETER"
+       depends on ARCH_TEGRA_11x_SOC
+       help
+         Support for camera parameter for device Fairfax
+
 choice
        prompt "Tegra platform type"
        default TEGRA_SILICON_PLATFORM
