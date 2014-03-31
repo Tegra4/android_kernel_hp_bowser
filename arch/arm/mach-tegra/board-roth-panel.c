@@ -1,7 +1,7 @@
 /*
  * arch/arm/mach-tegra/board-roth-panel.c
  *
- * Copyright (c) 2011-2013, NVIDIA Corporation. All rights reserved.
+ * Copyright (c) 2011-2014, NVIDIA Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -941,7 +941,7 @@ static struct tegra_dc_sd_settings roth_sd_settings = {
 	/* Low soft clipping threshold to compensate for aggressive k_limit */
 	.soft_clipping_threshold = 128,
 	.smooth_k_enable = true,
-	.smooth_k_incr = 128,
+	.smooth_k_incr = 32,
 	/* Default video coefficients */
 	.coeff = {5, 9, 2},
 	.fc = {0, 0},
