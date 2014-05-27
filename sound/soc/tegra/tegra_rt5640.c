@@ -1857,7 +1857,8 @@ static __devinit int tegra_rt5640_driver_probe(struct platform_device *pdev)
 		if (ret)
 			dev_err(&pdev->dev, "Fail gpio_direction AUDIO_LDO1\n");
 
-		msleep(400);
+		/* rt5639 needs 400ms delay b/w LDO1_EN and Initial */
+		msleep(450);
 	}
 
 	if (gpio_is_valid(pdata->gpio_codec1)) {
