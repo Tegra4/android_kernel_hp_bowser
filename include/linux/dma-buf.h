@@ -184,4 +184,5 @@ int dma_buf_mmap(struct dma_buf *, struct vm_area_struct *,
 void *dma_buf_vmap(struct dma_buf *);
 void dma_buf_vunmap(struct dma_buf *, void *vaddr);
 
+bool dmabuf_is_ion(struct dma_buf *dmabuf);
 #endif /* __DMA_BUF_H__ */
