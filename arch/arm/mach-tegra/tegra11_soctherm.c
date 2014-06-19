@@ -1,7 +1,7 @@
 /*
  * arch/arm/mach-tegra/tegra11_soctherm.c
  *
- * Copyright (c) 2011-2013, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 2011-2014, NVIDIA CORPORATION. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -448,13 +448,6 @@ static const void __iomem *clk_reset_base = IO_ADDRESS(TEGRA_CLK_RESET_BASE);
 #define pmc_writel(value, reg) __raw_writel(value, (u32)pmc_base + (reg))
 #define pmc_readl(reg) __raw_readl((u32)pmc_base + (reg))
 
-#define soctherm_writel(value, reg)	\
-	(soctherm_suspended ?:		\
-		__raw_writel(value, (u32)reg_soctherm_base + (reg)))
-#define soctherm_readl(reg)		\
-	(soctherm_suspended ? 0 :	\
-		__raw_readl((u32)reg_soctherm_base + (reg)))
-
 static DEFINE_MUTEX(soctherm_suspend_resume_lock);
 
 static int soctherm_suspend(void);
@@ -587,6 +580,9 @@ static const unsigned long default_tsensor_clk_rate = 500000;
 static int sensor2therm_a[TSENSE_SIZE];
 static int sensor2therm_b[TSENSE_SIZE];
 
+static u32 clock_enabled;
+struct mutex clock_lock;
+
 static inline bool is_thermal_dev_throttle_enabled(
 		const struct soctherm_platform_data *pdata,
 		size_t throttle_id,
@@ -603,6 +599,32 @@ static inline bool is_thermal_dev_throttle_enabled(
 		return false;
 
 	return pdata->throttle[throttle_id].devs[idx].enable;
+}
+
+static inline void soctherm_writel(u32 value, u32 reg)
+{
+	mutex_lock(&clock_lock);
+	if (unlikely(clock_enabled == 0)) {
+		pr_warn("soctherm: cannot write reg when clock is disabled!\n");
+		mutex_unlock(&clock_lock);
+		return;
+	}
+	__raw_writel(value, (u32)reg_soctherm_base + reg);
+	mutex_unlock(&clock_lock);
+}
+
+static inline u32 soctherm_readl(u32 reg)
+{
+	u32 ret;
+	mutex_lock(&clock_lock);
+	if (unlikely(clock_enabled == 0)) {
+		pr_warn("soctherm: cannot read reg when clock is disabled!\n");
+		mutex_unlock(&clock_lock);
+		return 0;
+	}
+	ret = __raw_readl((u32)reg_soctherm_base + reg);
+	mutex_unlock(&clock_lock);
+	return ret;
 }
 
 static inline s64 div64_s64_precise(s64 a, s32 b)
@@ -1619,7 +1641,15 @@ static int soctherm_clk_enable(bool enable)
 	if (enable) {
 		clk_enable(soctherm_clk);
 		clk_enable(tsensor_clk);
+		clock_enabled = 1;
 	} else {
+		/*
+		 * need a lock here in case that we try to disable clock while
+		 * register operation is ongoing
+		 */
+		mutex_lock(&clock_lock);
+		clock_enabled = 0;
+		mutex_unlock(&clock_lock);
 		clk_disable(soctherm_clk);
 		clk_disable(tsensor_clk);
 	}
@@ -2066,6 +2096,9 @@ int __init tegra11_soctherm_init(struct soctherm_platform_data *data)
 {
 	int ret;
 
+	clock_enabled = 0;
+	mutex_init(&clock_lock);
+
 	register_pm_notifier(&soctherm_nb);
 
 	if (!data)
@@ -2121,6 +2154,16 @@ static int regs_show(struct seq_file *s, void *data)
 
 	seq_printf(s, "-----TSENSE (precision %s  convert %s)-----\n",
 		PRECISION_TO_STR(), read_hw_temp ? "HW" : "SW");
+
+	if (unlikely(clock_enabled == 0)) {
+		seq_puts(s, "SOC_THERM is SUSPENDED\n");
+		return 0;
+	}
+
+	/*
+	 * It is not guaranteed that the following reg ops will always succeed,
+	 * because the clock still might be disabled after the above judgement.
+	 */
 	for (i = 0; i < TSENSE_SIZE; i++) {
 		r = soctherm_readl(TS_TSENSE_REG_OFFSET(TS_CPU0_CONFIG1, i));
 		state = REG_GET(r, TS_CPU0_CONFIG1_EN);
