@@ -1385,6 +1385,7 @@ static void usbhid_disconnect(struct usb_interface *intf)
 	if (WARN_ON(!hid))
 		return;
 
+	usb_set_intfdata(intf, NULL);
 	usbhid = hid->driver_data;
 	spin_lock_irq(&usbhid->lock);
 	set_bit(HID_DISCONNECTED, &usbhid->iofl);
