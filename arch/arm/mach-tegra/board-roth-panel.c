@@ -1,7 +1,7 @@
 /*
  * arch/arm/mach-tegra/board-roth-panel.c
  *
- * Copyright (c) 2011-2014, NVIDIA Corporation. All rights reserved.
+ * Copyright (c) 2011-2015, NVIDIA Corporation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -616,11 +616,11 @@ static int roth_dsi_panel_postsuspend(void)
 
 static struct tegra_dc_mode roth_dsi_modes[] = {
 	{
-		.pclk = 66700000,
+		.pclk = 66246000,
 		.h_ref_to_sync = 4,
 		.v_ref_to_sync = 1,
 		.h_sync_width = 4,
-		.v_sync_width = 4,
+		.v_sync_width = 2,
 		.h_back_porch = 112,
 		.v_back_porch = 12,
 		.h_active = 720,
