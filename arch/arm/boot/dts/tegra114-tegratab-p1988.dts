@@ -1,7 +1,5 @@
 /*
- * arch/arm/boot/dts/tegra114-tegratab-ers.dts
- *
- * Copyright (c) 2013-2014 NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2013-2014, NVIDIA CORPORATION.  All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -18,13 +16,10 @@
 
 /dts-v1/;
 
-/include/ "tegra114-tegratab-common.dtsi"
+/include/ "tegra114-tegranote7c-common.dtsi"
 
 / {
 	host1x {
-<<<<<<< HEAD
-		status = "okay";
-=======
 		/* tegradc.0 */
 		dc@54200000 {
 			status = "okay";
@@ -43,11 +38,11 @@
 					clock-frequency = <70666000>;
 					hactive = <800>;
 					vactive = <1280>;
-					hfront-porch = <32>;
-					hback-porch = <57>;
+					hfront-porch = <40>;
+					hback-porch = <60>;
 					hsync-len = <1>;
-					vfront-porch = <28>;
-					vback-porch = <14>;
+					vfront-porch = <30>;
+					vback-porch = <24>;
 					vsync-len = <1>;
 					nvidia,h-ref-to-sync = <10>;
 					nvidia,v-ref-to-sync = <1>;
@@ -233,6 +228,40 @@
 				nvidia,out-max-pixclk = <148500>;
 				nvidia,out-align = "msb";
 				nvidia,out-order = "rtob"; /*red to blue*/
+				nvidia,out-tmds-cfg {
+					tmds-cfg@0 {
+						pclk = <27000000>;
+						pll0 = <0x01003010>;
+						pll1 = <0x00301b00>;
+						pe-current = <0x00000000>;
+						drive-current = <0x23232323>;
+						peak-current = <0x00000000>;
+					};
+					tmds-cfg@1 {
+						pclk = <74250000>;
+						pll0 = <0x01003110>;
+						pll1 = <0x00301b00>;
+						pe-current = <0x00000000>;
+						drive-current = <0x21212121>;
+						peak-current = <0x03030303>;
+					};
+					tmds-cfg@2 {
+						pclk = <148500000>;
+						pll0 = <0x01003310>;
+						pll1 = <0x00301b00>;
+						pe-current = <0x00000000>;
+						drive-current = <0x24242424>;
+						peak-current = <0x03030303>;
+					};
+					tmds-cfg@3 {
+						pclk = <0x7fffffff>;
+						pll0 = <0x01003f10>;
+						pll1 = <0x13300b00>;
+						pe-current = <0x00000000>;
+						drive-current = <0x24242424>;
+						peak-current = <0x07070707>;
+					};
+				};
 			};
 			framebuffer-data {
 				nvidia,fb-bpp = <32>; /* bits per pixel */
@@ -258,10 +287,67 @@
 			nvidia,dsi-phy-clkzero = <330>;
 			nvidia,dsi-phy-clkprepare = <27>;
 		};
->>>>>>> e7aee62... video: tegra: dc: skip cmu init in dc probe
 		hdmi {
 			status = "okay";
+			nvidia,regulators = "avdd_hdmi",
+					    "avdd_hdmi_pll",
+					    "vdd_hdmi_5v0";
+			nvidia,ddc-i2c-bus = <&hdmi_ddc>;
+			nvidia,hpd-gpio = <&gpio 111 1>;
+			nvidia,hotplug-report = <1>;
 		};
+	};
+	pwm-bl {
+		status = "okay";
+		nvidia,panel-pwm-bl = <&panelpwmbl>;
+		nvidia,pwm-id = <1>;
+		nvidia,max-brightness = <255>;
+		nvidia,dft-brightness = <153>;
+		nvidia,dft-charge-brightness = <40>;
+		nvidia,pwm-period-ns = <40000>;
+		nvidia,disable-edp-throttle = <1>;
+		nvidia,edp-states = <1711 1390 1057 713 360 0>;
+		nvidia,edp-brightness = <255 204 153 101 50 0>;
+		nvidia,pwm-gpio = <&gpio 57 0>; /* gpio PH1 */
+	};
+
+	panel: panel {
+		compatible = "lgd,tegratab";
+		status = "okay";
+		nvidia,regulators = "avdd_lcd",
+				    "vdd_lcd_bl_en",
+				    "dvdd_lcd";
+	};
+
+	panelpwmbl: panelpwmbl {
+		compatible = "lgd-pwm-bl,tegratab";
+		status = "okay";
+		nvidia,bl-output = < 0 1 2 3 4 6 7 8 9 10
+				     11 12 13 14 15 16 16 17 18 19
+				     20 21 22 23 24 25 25 26 27 28
+				     29 30 31 32 33 34 35 36 37 38
+				     39 40 41 42 43 44 45 46 47 48
+				     49 50 51 52 53 54 55 56 57 58
+				     59 60 61 62 63 64 65 66 67 68
+				     69 70 71 72 73 74 74 75 76 77
+				     78 79 80 81 82 83 84 85 86 87
+				     88 89 90 91 92 93 94 95 96 97
+				     98 99 100 101 102 103 104 105 106 107
+				     108 109 110 111 112 113 114 115 116 117
+				     118 119 120 121 122 123 124 125 126 127
+				     128 129 130 131 132 133 134 135 136 137
+				     138 139 140 141 142 143 144 145 146 147
+				     148 149 150 151 152 153 154 155 156 157
+				     158 159 160 161 162 164 165 166 167 168
+				     169 170 171 172 173 174 175 176 177 178
+				     179 180 181 182 183 184 185 186 187 188
+				     189 190 191 192 193 194 195 196 197 198
+				     199 200 201 202 203 205 206 207 208 209
+				     210 211 212 213 214 215 216 217 218 219
+				     220 221 222 223 224 225 226 227 228 229
+				     230 231 232 233 234 236 237 238 239 240
+				     241 242 243 244 245 246 247 248 249 250
+				     251 252 253 253 254 255 >;
 	};
 
 	/* GEN1 */
@@ -281,8 +367,9 @@
 		ak8963c@0d {
 			compatible = "ak,ak8963";
 			reg = <0x0d>;
-			orientation = [ff 00 00 00 ff 00 00 00 01];
+			orientation = [ff 00 00 00 01 00 00 00 ff];
 			config = "mpu";
+			sec-slave-id = <18>;
 		};
 	};
 
@@ -302,5 +389,14 @@
 			nvidia,use-vcm-vdd;
 			reset-gpios = <&gpio 221 0>; /* gpio PBB5 */
 		};
+	};
+	/* DDC */
+	hdmi_ddc: i2c@7000c700 {
+		status = "okay";
+		clock-frequency = <100000>;
+	};
+
+	pwfm@0x7000a010 {
+		status = "okay";
 	};
 };
