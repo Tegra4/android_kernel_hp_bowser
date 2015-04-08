@@ -771,6 +771,14 @@ subsys_initcall_sync(roth_fixed_regulator_init);
 int __init roth_regulator_init(void)
 {
 	struct board_info board_info;
+
+	if (get_tegra_uart_debug_port_id() == UART_FROM_SDCARD) {
+		reg_idata_ldo9.constraints.min_uV = 2700 * 1000;
+		reg_idata_ldo9.constraints.max_uV = 2700 * 1000;
+		reg_idata_ldo9.constraints.always_on = 1;
+		reg_idata_ldo9.constraints.boot_on = 1;
+	}
+
 #ifdef CONFIG_ARCH_TEGRA_HAS_CL_DVFS
 	roth_cl_dvfs_init();
 #endif

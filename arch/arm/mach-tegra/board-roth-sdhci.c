@@ -461,7 +461,9 @@ int __init roth_sdhci_init(void)
 		tegra_sdhci_platform_data3.trim_delay = 0;
 
 	platform_device_register(&tegra_sdhci_device3);
-	platform_device_register(&tegra_sdhci_device2);
+	/* sdcard slot is muxed to UART-A */
+	if (get_tegra_uart_debug_port_id() != UART_FROM_SDCARD)
+		platform_device_register(&tegra_sdhci_device2);
 	platform_device_register(&tegra_sdhci_device0);
 	roth_wifi_init();
 	return 0;
