@@ -1344,6 +1344,7 @@ static int tegra_rt5640_event_int_spk(struct snd_soc_dapm_widget *w,
 					machine->tfa9887_on = 1;
 				}
 			} else {
+				machine->speaker_sel = 0;
 				Tfa9887_Powerdown(1);
 				machine->tfa9887_on = 0;
 			}
