@@ -1,0 +1,12 @@
+#
+# Kconfig for stand-alone compass input device drivers
+#
+
+config INV_AK89XX
+    tristate "Invensense AKM AK8975/AK8972/AK8963 compass input device drivers"
+    depends on I2C && SYSFS && INPUT
+    default n
+    help
+      This driver supports the AKM AK8975/AK8972/AK8963 compass devices.
+      This driver can be built as a module. The module will be called
+      inv-ak89xx.

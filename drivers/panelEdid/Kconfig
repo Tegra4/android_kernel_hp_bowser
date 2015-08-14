@@ -1,0 +1,6 @@
+comment "AUO EDID Driver options"
+
+config AUO_EDID
+	tristate "Support AUO EDID driver"
+	help
+	  Driver for AUO EDID.

@@ -1,0 +1,44 @@
+menuconfig IO373B
+	tristate "IO373X-B Support"
+	help
+	  Add support for IO373X-B chip.
+
+if IO373B
+
+config IO373B_DEBUG
+	bool "Build with DEBUG flag"
+	help
+
+config IO373B_SMBD
+	tristate "IO373X-B base (SMBD) driver"
+	default y
+	help
+	  Enable it to enable IO373X-B chip.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called io373b-smbd.
+
+config IO373B_ACPI
+	tristate "IO373X-B battery/charger (ACPI info) Support"
+	depends on IO373B_SMBD
+	select POWER_SUPPLY
+	help
+	  Enable it if you have batteries or chargers attached to
+	  IO373X-B chip.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called io373b-acpi.
+
+config IO373B_PS2
+	tristate "IO373X-B PS/2 driver"
+	depends on IO373B_SMBD
+	select SERIO
+	select KEYBOARD_ATKBD
+	help
+	  Enable it if you have PS/2 keyboard, mouse or touchpad attached
+	  to IO373X-B chip.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called io373b-ps2.
+
+endif # IO373B

@@ -1,0 +1,20 @@
+menu "Maya Base"
+
+menuconfig MAYA_BASE
+        tristate "Maya Base Support"
+        help
+          Add support for Maya Base.
+
+if MAYA_BASE
+
+config MAYA_BASE_CONTROLLER
+	tristate "Maya base controller driver"
+	depends on IO373B_SMBD
+	help
+	  This enable Maya base controller which detects base and
+	  synchronize info onto it.
+
+source "drivers/staging/maya_base/io373x-b/Kconfig"
+
+endif # MAYA_BASE
+endmenu
