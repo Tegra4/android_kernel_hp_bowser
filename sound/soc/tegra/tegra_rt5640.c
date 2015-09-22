@@ -2,7 +2,7 @@
  * tegra_rt5640.c - Tegra machine ASoC driver for boards using ALC5640 codec.
  *
  * Author: Johnny Qiu <joqiu@nvidia.com>
- * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2011-2015, NVIDIA CORPORATION.  All rights reserved.
  *
  * Based on code copyright/by:
  *
@@ -111,6 +111,7 @@ struct tegra_rt5640 {
 	volatile int clock_enabled;
 	int speaker_sel;
 	int tfa9887_on;
+	struct mutex lock;
 };
 
 static int tegra_call_mode_info(struct snd_kcontrol *kcontrol,
@@ -1333,16 +1334,27 @@ static int tegra_rt5640_event_int_spk(struct snd_soc_dapm_widget *w,
 	if (machine_is_roth()) {
 		if (i2s_tfa) {
 			if (SND_SOC_DAPM_EVENT_ON(event)) {
+				mutex_lock(&machine->lock);
 				machine->speaker_sel = 1;
 				if (!machine->tfa9887_on) {
+					Tfa9887_Powerdown(1);
 					if (codec_rt)
 						snd_soc_update_bits(codec_rt,
 							RT5640_PWR_DIG1, 0x0001, 0x0000);
+					tegra_asoc_enable_clocks();
+					Tfa9887_Powerdown(0);
+					tegra_asoc_disable_clocks();
 					machine->tfa9887_on = 1;
 				}
+				mutex_unlock(&machine->lock);
 			} else {
-				machine->speaker_sel = 0;
-				machine->tfa9887_on = 0;
+				mutex_lock(&machine->lock);
+				if (machine->tfa9887_on) {
+					machine->speaker_sel = 0;
+					Tfa9887_Powerdown(1);
+					machine->tfa9887_on = 0;
+				}
+				mutex_unlock(&machine->lock);
 			}
 		}
 	}
@@ -1402,6 +1414,16 @@ static int tegra_rt5640_event_hp(struct snd_soc_dapm_widget *w,
 
 	gpio_set_value_cansleep(pdata->gpio_hp_mute,
 				!SND_SOC_DAPM_EVENT_ON(event));
+	if (machine_is_roth()) {
+		if (i2s_tfa) {
+			if (SND_SOC_DAPM_EVENT_ON(event)) {
+				mutex_lock(&machine->lock);
+				Tfa9887_Powerdown(1);
+				machine->tfa9887_on = 0;
+				mutex_unlock(&machine->lock);
+			}
+		}
+	}
 
 	return 0;
 }
@@ -1495,14 +1517,8 @@ static int tegra_set_tfa9887_powerdown(struct snd_kcontrol *kcontrol,
 			      struct snd_ctl_elem_value *ucontrol)
 {
 	struct  tegra_asoc_utils_data *data = snd_kcontrol_chip(kcontrol);
-	struct snd_soc_card *card = data->card;
-	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(card);
 
 	data->tfa9887_powerdown = ucontrol->value.integer.value[0];
-	if (i2s_tfa && (i2s_tfa->playback_ref_count <= 1)) {
-		Tfa9887_Powerdown(data->tfa9887_powerdown);
-		machine->tfa9887_on = !data->tfa9887_powerdown;
-	}
 	return 1;
 }
 
@@ -1724,7 +1740,34 @@ static int tegra_rt5640_set_bias_level(struct snd_soc_card *card,
 		tegra_asoc_utils_clk_enable(&machine->util_data);
 		machine->bias_level = level;
 	}
-
+	if (machine_is_roth()) {
+		mutex_lock(&machine->lock);
+		if (machine->speaker_sel &&
+			!machine->tfa9887_on &&
+			level > machine->bias_level) {
+			if (i2s_tfa) {
+				if (codec_rt)
+					Tfa9887_Powerdown(1);
+					snd_soc_update_bits(codec_rt,
+					RT5640_PWR_DIG1, 0x0001, 0x0000);
+					tegra_asoc_enable_clocks();
+					Tfa9887_Powerdown(0);
+					tegra_asoc_disable_clocks();
+					machine->tfa9887_on = 1;
+			}
+		}
+		mutex_unlock(&machine->lock);
+		if (level == SND_SOC_BIAS_OFF) {
+			if (i2s_tfa) {
+				mutex_lock(&machine->lock);
+				if (machine->tfa9887_on) {
+					Tfa9887_Powerdown(1);
+					machine->tfa9887_on = 0;
+				}
+				mutex_unlock(&machine->lock);
+			}
+		}
+	}
 	return 0;
 }
 
@@ -1950,6 +1993,7 @@ static __devinit int tegra_rt5640_driver_probe(struct platform_device *pdev)
 			pdata->i2s_param[i].bit_clk;
 	}
 #endif
+	mutex_init(&machine->lock);
 	card->dapm.idle_bias_off = 1;
 	ret = snd_soc_register_card(card);
 	if (ret) {
