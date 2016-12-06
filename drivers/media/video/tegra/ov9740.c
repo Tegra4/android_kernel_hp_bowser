@@ -173,7 +173,7 @@ static int ov9740_get_status(struct ov9740_info *info,
         struct ov9740_status *dev_status)
 {
     int err;
-    u8 model_id_H, model_id_L, frame_cnt;
+    u8 model_id_H = 0, model_id_L = 0, frame_cnt = 0;
 
     err = ov9740_read_reg(info->i2c_client, 0x000, (u8 *) &model_id_H);
     err = ov9740_read_reg(info->i2c_client, 0x001, (u8 *) &model_id_L);
