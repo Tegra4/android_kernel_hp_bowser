@@ -166,7 +166,7 @@ static int freezer_can_attach(struct cgroup *new_cgroup,
 			      struct cgroup_taskset *tset)
 {
 	struct freezer *freezer;
-	struct task_struct *task;
+	struct task_struct *task = NULL;
 
 	if ((current != task) && (!capable(CAP_SYS_ADMIN))) {
 		const struct cred *cred = current_cred(), *tcred;

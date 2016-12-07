@@ -585,7 +585,7 @@ static int ov2722_get_sensor_id(struct ov2722_info *info)
 {
 	int ret = 0;
 	int i;
-	u8  bak;
+	u8  bak = 0;
 
 	if (info->sensor_data.fuse_id_size)
 		return 0;
