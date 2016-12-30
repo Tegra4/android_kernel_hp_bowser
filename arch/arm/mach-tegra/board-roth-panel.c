@@ -744,7 +744,7 @@ static void roth_hdmi_hotplug_report(bool state)
 /* Table of electrical characteristics for Roth HDMI.
  * All modes must be declared here
  */
-struct tdms_config roth_tdms_config[] = {
+struct tmds_config roth_tmds_config[] = {
 	{ /* 720p / 74.25MHz modes */
 	.pclk = 74250000,
 	.pll0 = 0x01003f10,
@@ -772,8 +772,8 @@ struct tdms_config roth_tdms_config[] = {
 };
 
 struct tegra_hdmi_out roth_hdmi_out = {
-	.tdms_config = roth_tdms_config,
-	.n_tdms_config = 3,
+	.tmds_config = roth_tmds_config,
+	.n_tmds_config = 3,
 };
 
 static struct tegra_dc_out roth_disp2_out = {
