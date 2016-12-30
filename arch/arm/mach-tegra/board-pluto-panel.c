@@ -36,6 +36,7 @@
 #include "gpio-names.h"
 #include "board-pluto.h"
 #include "board-panel.h"
+#include "tegra-board-id.h"
 #include "common.h"
 
 #include "tegra11_host1x_devices.h"

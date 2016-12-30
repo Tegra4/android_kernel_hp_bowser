@@ -16,9 +16,9 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define    BOARD_E1582    0x062e
+//#define    BOARD_E1582    0x062e
 #define    BOARD_E1605    0x0645
-#define    BOARD_E1577    0x0629
+//#define    BOARD_E1577    0x0629
 
 #define    BOARD_E1627    0x065b
 #define    BOARD_E1639    0x0667
