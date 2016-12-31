@@ -18,9 +18,6 @@
 # Author:
 #   wwang (wei_wang@realsil.com.cn)
 #   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
-# Maintainer:
-#   Edwin Rong (edwin_rong@realsil.com.cn)
-#   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
 #
 # Makefile for the RTS51xx USB Card Reader drivers.
 #
@@ -29,9 +26,11 @@ TARGET_MODULE := rts5139
 
 EXTRA_CFLAGS := -Idrivers/scsi -I$(PWD)
 
-obj-m += $(TARGET_MODULE).o
+obj-y := $(TARGET_MODULE).o
 
-common-obj := rts51x_transport.o rts51x_scsi.o rts51x_fop.o
+obj-($(CONFIG_RTS5139)) += $(TARGET_MODULE).o
+
+common-obj := rts51x_transport.o rts51x_common.o rts51x_scsi.o rts51x_fop.o
 
 $(TARGET_MODULE)-objs := $(common-obj) rts51x.o rts51x_chip.o rts51x_card.o \
 		xd.o sd.o ms.o sd_cprm.o ms_mg.o

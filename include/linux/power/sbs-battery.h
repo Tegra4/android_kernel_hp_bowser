@@ -40,4 +40,7 @@ struct sbs_platform_data {
 };
 extern int sbs_battery_detect(void);
 extern void sbs_update(void);
+#ifdef CONFIG_MACH_BOWSER
+extern int sbs_battery_status(void);
+#endif
 #endif

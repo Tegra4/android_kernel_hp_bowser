@@ -26,12 +26,20 @@ obj-$(CONFIG_BATTERY_OLPC)	+= olpc_battery.o
 obj-$(CONFIG_BATTERY_TOSA)	+= tosa_battery.o
 obj-$(CONFIG_BATTERY_COLLIE)	+= collie_battery.o
 obj-$(CONFIG_BATTERY_WM97XX)	+= wm97xx_battery.o
+ifndef CONFIG_MACH_BOWSER
 obj-$(CONFIG_BATTERY_SBS)	+= sbs-battery.o
+else
+obj-$(CONFIG_BATTERY_SBS)	+= bowser-sbs-battery.o
+endif
 obj-$(CONFIG_BATTERY_BQ27x00)	+= bq27x00_battery.o
 obj-$(CONFIG_CHARGER_TPS8003X)	+= tps80031-charger.o
 obj-$(CONFIG_BATTERY_GAUGE_TPS8003X) += tps80031_battery_gauge.o
 obj-$(CONFIG_CHARGER_SMB349)	+= smb349-charger.o
+ifndef CONFIG_MACH_BOWSER
 obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
+else
+obj-$(CONFIG_CHARGER_TPS65090)	+= bowser-tps65090-charger.o
+endif
 obj-$(CONFIG_CHARGER_MAX77665)	+= max77665-charger.o
 obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
 obj-$(CONFIG_BATTERY_DA9052)	+= da9052-battery.o

@@ -10,7 +10,11 @@ obj-$(CONFIG_KEYBOARD_ADP5588)		+= adp5588-keys.o
 obj-$(CONFIG_KEYBOARD_ADP5589)		+= adp5589-keys.o
 obj-$(CONFIG_KEYBOARD_AMIGA)		+= amikbd.o
 obj-$(CONFIG_KEYBOARD_ATARI)		+= atakbd.o
+ifndef CONFIG_MACH_BOWSER
 obj-$(CONFIG_KEYBOARD_ATKBD)		+= atkbd.o
+else
+obj-$(CONFIG_KEYBOARD_ATKBD)		+= bowser-atkbd.o
+endif
 obj-$(CONFIG_KEYBOARD_BFIN)		+= bf54x-keys.o
 obj-$(CONFIG_KEYBOARD_DAVINCI)		+= davinci_keyscan.o
 obj-$(CONFIG_KEYBOARD_EP93XX)		+= ep93xx_keypad.o
@@ -49,7 +53,11 @@ obj-$(CONFIG_KEYBOARD_STOWAWAY)		+= stowaway.o
 obj-$(CONFIG_KEYBOARD_SUNKBD)		+= sunkbd.o
 obj-$(CONFIG_KEYBOARD_TC3589X)		+= tc3589x-keypad.o
 CFLAGS_tegra-kbc.o			= -Werror
+ifndef CONFIG_MACH_BOWSER
 obj-$(CONFIG_KEYBOARD_TEGRA)		+= tegra-kbc.o
+else
+obj-$(CONFIG_KEYBOARD_TEGRA)		+= bowser-tegra-kbc.o
+endif
 obj-$(CONFIG_KEYBOARD_TNETV107X)	+= tnetv107x-keypad.o
 obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
 obj-$(CONFIG_KEYBOARD_XTKBD)		+= xtkbd.o

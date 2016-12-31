@@ -1,0 +1,53 @@
+/*
+ * Example board info, platform data
+ */
+
+ #include "io373b.h"
+
+//#define SLATE_TOO /* io373b on base AND slate */
+
+/* In real application, we use only 1 acpi device, which reports batteries/chargers
+   info no matter they are on slate or base. */
+union io373b_subdev_board_info acpi_info = {
+	.acpi.num_bat = 2, /* number of batteries and ac-chargers */
+};
+
+#ifdef SLATE_TOO /* then all batteries/chargers info go to slate acpi */
+static struct i2c_board_info io373b_slate_virtual_i2c_devs[] = {
+	{ .type = "io373b-acpi",       /* battery/charger acpi info device */
+	  .addr = 0x07,                /* i2c-addr(7 bits) */
+	  .platform_data = &acpi_info, /* points to info required */
+	},
+	{ },
+};
+#endif
+
+static struct i2c_board_info io373b_base_virtual_i2c_devs[] = {
+#ifndef SLATE_TOO /* no slate io373b, then both acpi and kbd are on base */
+	{ .type = "io373b-acpi",       /* battery/charger acpi info device */
+	  .addr = 0x07,                /* i2c-addr(7 bits) */
+	  .platform_data = &acpi_info, /* points to info required */
+	},
+#endif
+	{ .type = "io373b-ps2-kbd", /* PS/2 keyboard */
+	  .addr = 0x01,             /* i2c-addr(7 bits) */
+	},
+	{ },
+};
+
+static struct i2c_board_info io373b_boards[] = {
+#ifdef SLATE_TOO
+	{ .type = "io373b-smbd-slate",
+	  .addr = 0x61,         /* i2c-addr(7 bits) */
+	  .platform_data = io373b_slate_virtual_i2c_devs,
+	},
+#endif
+	{ .type = "io373b-smbd-base",
+	  .addr = 0x62,         /* i2c-addr(7 bits) */
+	  .irq  = 0,            /* kbd on base needs irq */
+	  .platform_data = io373b_base_virtual_i2c_devs,
+	},
+	{ .type = "io373b-smbd",/* firmware update purpose */
+	  .addr = 0x60,         /* i2c-addr(7 bits) */
+	},
+};

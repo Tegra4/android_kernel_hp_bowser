@@ -405,6 +405,7 @@ static void scsi_run_queue(struct request_queue *q)
 	struct Scsi_Host *shost;
 	LIST_HEAD(starved_list);
 	unsigned long flags;
+	unsigned long flags1;
 
 	shost = sdev->host;
 	if (scsi_target(sdev)->single_lun)
@@ -436,11 +437,11 @@ static void scsi_run_queue(struct request_queue *q)
 			continue;
 		}
 
-		spin_unlock(shost->host_lock);
-		spin_lock(sdev->request_queue->queue_lock);
+		spin_unlock_irqrestore(shost->host_lock, flags);
+		spin_lock_irqsave(sdev->request_queue->queue_lock, flags1);
 		__blk_run_queue(sdev->request_queue);
-		spin_unlock(sdev->request_queue->queue_lock);
-		spin_lock(shost->host_lock);
+		spin_unlock_irqrestore(sdev->request_queue->queue_lock, flags1);
+		spin_lock_irqsave(shost->host_lock, flags);
 	}
 	/* put any unprocessed entries back */
 	list_splice(&starved_list, &shost->starved_list);

@@ -363,6 +363,8 @@ static int lightsensor_enable(struct cm3217_info *lpi)
 	int ret = 0;
 	uint8_t cmd = 0;
 
+	als_power(1);
+
 	mutex_lock(&lpi->enable_lock);
 
 	if (lpi->als_enable)
@@ -417,6 +419,8 @@ static int lightsensor_disable(struct cm3217_info *lpi)
 
 out:
 	mutex_unlock(&lpi->enable_lock);
+
+	als_power(0);
 
 	return ret;
 }

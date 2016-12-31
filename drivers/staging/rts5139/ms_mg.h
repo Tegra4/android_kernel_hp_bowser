@@ -1,7 +1,7 @@
 /* Driver for Realtek RTS51xx USB card reader
  * Header file
  *
- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.  
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,13 +14,10 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program; if not, see <http://www.gnu.org/licenses/>.
+ * with this program; if not, see <http:
  *
  * Author:
  *   wwang (wei_wang@realsil.com.cn)
- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
- * Maintainer:
- *   Edwin Rong (edwin_rong@realsil.com.cn)
  *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
  */
 
@@ -38,4 +35,4 @@ int mg_rsp(struct scsi_cmnd *srb, struct rts51x_chip *chip);
 int mg_get_ICV(struct scsi_cmnd *srb, struct rts51x_chip *chip);
 int mg_set_ICV(struct scsi_cmnd *srb, struct rts51x_chip *chip);
 
-#endif /* __RTS51X_MS_MG_H */
+#endif  

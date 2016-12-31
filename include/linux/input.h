@@ -475,6 +475,11 @@ struct input_keymap_entry {
 #define KEY_RFKILL		247	/* Key that controls all radios */
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
+#define KEY_EC_UPDATE_NOTICE	249	/* [Maya] notify OS that EC needs to be updated firmware. */
+#define KEY_START_SETTINGS	250	/* [Maya] start settings */
+#define KEY_START_VOICE_COMMAND	251	/* [Maya] voice command*/
+#define KEY_RECENT_APP		252	/* [Maya] start recent app */
+#define KEY_WAKEUP_DROPPED	253	/* [Maya] wake-up key */
 
 /* Code 255 is reserved for special needs of AT keyboard driver */
 
@@ -958,6 +963,7 @@ struct input_keymap_entry {
 #define BUS_GSC			0x1A
 #define BUS_ATARI		0x1B
 #define BUS_SPI			0x1C
+#define BUS_RMI			0x1D
 
 /*
  * MT_TOOL types

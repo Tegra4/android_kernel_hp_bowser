@@ -447,6 +447,9 @@ int tegra_edid_get_monspecs(struct tegra_edid *edid, struct fb_monspecs *specs)
 	kref_init(&new_data->refcnt);
 
 	new_data->support_stereo = 0;
+#ifdef CONFIG_MACH_BOWSER
+	new_data->support_audio = 0;
+#endif
 
 	data = new_data->dc_edid.buf;
 

@@ -1349,6 +1349,7 @@ void wake_up_klogd(void)
  *
  * console_unlock(); may be called from any context.
  */
+#define CONSOLE_UNLOCK_FLUSH_SIZE 64
 void console_unlock(void)
 {
 	unsigned long flags;
@@ -1368,9 +1369,15 @@ again:
 		wake_klogd |= log_start - log_end;
 		if (con_start == log_end)
 			break;			/* Nothing to print */
-		_con_start = con_start;
-		_log_end = log_end;
-		con_start = log_end;		/* Flush */
+		if ((log_end - con_start) > CONSOLE_UNLOCK_FLUSH_SIZE) {
+			_con_start = con_start;
+			_log_end = con_start + CONSOLE_UNLOCK_FLUSH_SIZE;
+			con_start = con_start + CONSOLE_UNLOCK_FLUSH_SIZE;		/* Flush */
+		} else {
+			_con_start = con_start;
+			_log_end = log_end;
+			con_start = log_end;		/* Flush */
+		}
 		raw_spin_unlock(&logbuf_lock);
 		stop_critical_timings();	/* don't trace print latency */
 		call_console_drivers(_con_start, _log_end);

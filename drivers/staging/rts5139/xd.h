@@ -1,7 +1,7 @@
 /* Driver for Realtek RTS51xx USB card reader
  * Header file
  *
- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.  
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,20 +14,16 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program; if not, see <http://www.gnu.org/licenses/>.
+ * with this program; if not, see <http:
  *
  * Author:
  *   wwang (wei_wang@realsil.com.cn)
- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
- * Maintainer:
- *   Edwin Rong (edwin_rong@realsil.com.cn)
  *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
  */
 
 #ifndef __RTS51X_XD_H
 #define __RTS51X_XD_H
 
-/* Error Codes */
 #define	XD_NO_ERROR			0x00
 #define	XD_NO_MEMORY			0x80
 #define	XD_PRG_ERROR			0x40
@@ -38,7 +34,6 @@
 #define	XD_ECC_ERROR			0x02
 #define	XD_TO_ERROR			0x01
 
-/* XD Commands */
 #define	READ1_1				0x00
 #define	READ1_2				0x01
 #define	READ2				0x50
@@ -62,11 +57,9 @@
 #define	CHG_DAT_IN_1			0x85
 #define	CACHE_PRG			0x15
 
-/* Redundant Area Related */
 #define XD_EXTRA_SIZE			0x10
 #define XD_2K_EXTRA_SIZE		0x40
 
-/* Define for XD Status  */
 #define	NOT_WRITE_PROTECTED		0x80
 #define	READY_STATE			0x40
 #define	PROGRAM_ERROR			0x01
@@ -74,7 +67,6 @@
 #define	INTERNAL_READY			0x20
 #define	READY_FLAG			0x5F
 
-/* Define for device code */
 #define	XD_8M_X8_512			0xE6
 #define	XD_16M_X8_512			0x73
 #define	XD_32M_X8_512			0x75
@@ -108,45 +100,40 @@
 #define	Sect_Per_Page			4
 #define	XD_ADDR_MODE_2C			XD_ADDR_MODE_2A
 
-#define ZONE0_BAD_BLOCK			23
-#define NOT_ZONE0_BAD_BLOCK		24
+#define ZONE0_BAD_BLOCK 		23
+#define NOT_ZONE0_BAD_BLOCK 		24
 
-/* Assign address mode */
 #define	XD_RW_ADDR			0x01
 #define	XD_ERASE_ADDR			0x02
 
-/* Macro Definition */
-#define	XD_PAGE_512(xd_card)		\
-	do {	\
-		(xd_card)->block_shift = 5;	\
-		(xd_card)->page_off = 0x1F;	\
-	} while (0)
 
-#define	XD_SET_BAD_NEWBLK(xd_card)	((xd_card)->multi_flag |= 0x01)
-#define	XD_CLR_BAD_NEWBLK(xd_card)	((xd_card)->multi_flag &= ~0x01)
+
+#define	XD_PAGE_512(xd_card)		(xd_card)->block_shift = 5; (xd_card)->page_off = 0x1F
+
+#define	XD_SET_BAD_NEWBLK(xd_card)	(xd_card)->multi_flag |= 0x01
+#define	XD_CLR_BAD_NEWBLK(xd_card)	(xd_card)->multi_flag &= ~0x01
 #define	XD_CHK_BAD_NEWBLK(xd_card)	((xd_card)->multi_flag & 0x01)
 
-#define	XD_SET_BAD_OLDBLK(xd_card)	((xd_card)->multi_flag |= 0x02)
-#define	XD_CLR_BAD_OLDBLK(xd_card)	((xd_card)->multi_flag &= ~0x02)
+#define	XD_SET_BAD_OLDBLK(xd_card)	(xd_card)->multi_flag |= 0x02
+#define	XD_CLR_BAD_OLDBLK(xd_card)	(xd_card)->multi_flag &= ~0x02
 #define	XD_CHK_BAD_OLDBLK(xd_card)	((xd_card)->multi_flag & 0x02)
 
-#define	XD_SET_MBR_FAIL(xd_card)	((xd_card)->multi_flag |= 0x04)
-#define	XD_CLR_MBR_FAIL(xd_card)	((xd_card)->multi_flag &= ~0x04)
+#define	XD_SET_MBR_FAIL(xd_card)	(xd_card)->multi_flag |= 0x04
+#define	XD_CLR_MBR_FAIL(xd_card)	(xd_card)->multi_flag &= ~0x04
 #define	XD_CHK_MBR_FAIL(xd_card)	((xd_card)->multi_flag & 0x04)
 
-#define	XD_SET_ECC_FLD_ERR(xd_card)	((xd_card)->multi_flag |= 0x08)
-#define	XD_CLR_ECC_FLD_ERR(xd_card)	((xd_card)->multi_flag &= ~0x08)
+#define	XD_SET_ECC_FLD_ERR(xd_card)	(xd_card)->multi_flag |= 0x08
+#define	XD_CLR_ECC_FLD_ERR(xd_card)	(xd_card)->multi_flag &= ~0x08
 #define	XD_CHK_ECC_FLD_ERR(xd_card)	((xd_card)->multi_flag & 0x08)
 
-#define	XD_SET_4MB(xd_card)		((xd_card)->multi_flag |= 0x10)
-#define	XD_CLR_4MB(xd_card)		((xd_card)->multi_flag &= ~0x10)
+#define	XD_SET_4MB(xd_card)		(xd_card)->multi_flag |= 0x10
+#define	XD_CLR_4MB(xd_card)		(xd_card)->multi_flag &= ~0x10
 #define	XD_CHK_4MB(xd_card)		((xd_card)->multi_flag & 0x10)
 
-#define	XD_SET_ECC_ERR(xd_card)		((xd_card)->multi_flag |= 0x40)
-#define	XD_CLR_ECC_ERR(xd_card)		((xd_card)->multi_flag &= ~0x40)
+#define	XD_SET_ECC_ERR(xd_card)		(xd_card)->multi_flag |= 0x40
+#define	XD_CLR_ECC_ERR(xd_card)		(xd_card)->multi_flag &= ~0x40
 #define	XD_CHK_ECC_ERR(xd_card)		((xd_card)->multi_flag & 0x40)
 
-/* Offset in xD redundant buffer */
 #define PAGE_STATUS		0
 #define BLOCK_STATUS		1
 #define BLOCK_ADDR1_L		2
@@ -159,7 +146,6 @@
 #define RESERVED3		9
 #define PARITY			10
 
-/* For CIS block */
 #define	CIS0_0			0
 #define	CIS0_1			1
 #define	CIS0_2			2
@@ -171,23 +157,23 @@
 #define	CIS0_8			8
 #define	CIS0_9			9
 #define	CIS1_0			256
-#define	CIS1_1			(256 + 1)
-#define	CIS1_2			(256 + 2)
-#define	CIS1_3			(256 + 3)
-#define	CIS1_4			(256 + 4)
-#define	CIS1_5			(256 + 5)
-#define	CIS1_6			(256 + 6)
-#define	CIS1_7			(256 + 7)
-#define	CIS1_8			(256 + 8)
-#define	CIS1_9			(256 + 9)
+#define	CIS1_1			256 + 1
+#define	CIS1_2			256 + 2
+#define	CIS1_3			256 + 3
+#define	CIS1_4			256 + 4
+#define	CIS1_5			256 + 5
+#define	CIS1_6			256 + 6
+#define	CIS1_7			256 + 7
+#define	CIS1_8			256 + 8
+#define	CIS1_9			256 + 9
 
 int reset_xd_card(struct rts51x_chip *chip);
 int xd_delay_write(struct rts51x_chip *chip);
-int xd_rw(struct scsi_cmnd *srb, struct rts51x_chip *chip, u32 start_sector,
-	  u16 sector_cnt);
+int xd_rw(struct scsi_cmnd *srb, struct rts51x_chip *chip, u32 start_sector, u16 sector_cnt);
 void xd_free_l2p_tbl(struct rts51x_chip *chip);
 void xd_cleanup_work(struct rts51x_chip *chip);
 int xd_power_off_card3v3(struct rts51x_chip *chip);
 int release_xd_card(struct rts51x_chip *chip);
 
-#endif /* __RTS51X_XD_H */
+#endif  
+
