@@ -33,8 +33,6 @@
 
 #include "tpa6130a2.h"
 
-//#define TPA61XXA2_REGULATOR_REQUIRED 1
-
 enum tpa_model {
 	TPA6130A2,
 	TPA6140A2,
@@ -137,14 +135,12 @@ static int tpa6130a2_power(u8 power)
 		goto exit;
 
 	if (power) {
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 		ret = regulator_enable(data->supply);
 		if (ret != 0) {
 			dev_err(&tpa6130a2_client->dev,
 				"Failed to enable supply: %d\n", ret);
 			goto exit;
 		}
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
 		/* Power on */
 		if (data->power_gpio >= 0)
 			gpio_set_value(data->power_gpio, 1);
@@ -156,9 +152,7 @@ static int tpa6130a2_power(u8 power)
 				"Failed to initialize chip\n");
 			if (data->power_gpio >= 0)
 				gpio_set_value(data->power_gpio, 0);
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 			regulator_disable(data->supply);
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
 			data->power_state = 0;
 			goto exit;
 		}
@@ -172,14 +166,12 @@ static int tpa6130a2_power(u8 power)
 		if (data->power_gpio >= 0)
 			gpio_set_value(data->power_gpio, 0);
 
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 		ret = regulator_disable(data->supply);
 		if (ret != 0) {
 			dev_err(&tpa6130a2_client->dev,
 				"Failed to disable supply: %d\n", ret);
 			goto exit;
 		}
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
 
 		data->power_state = 0;
 	}
@@ -415,7 +407,6 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 		gpio_direction_output(data->power_gpio, 0);
 	}
 
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 	switch (data->id) {
 	default:
 		dev_warn(dev, "Unknown TPA model (%d). Assuming 6130A2\n",
@@ -434,8 +425,6 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 		dev_err(dev, "Failed to request supply: %d\n", ret);
 		goto err_regulator;
 	}
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
-
 
 	ret = tpa6130a2_power(1);
 	if (ret != 0)
@@ -456,9 +445,7 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 	return 0;
 
 err_power:
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 	regulator_put(data->supply);
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
 err_regulator:
 	if (data->power_gpio >= 0)
 		gpio_free(data->power_gpio);
@@ -477,9 +464,7 @@ static int __devexit tpa6130a2_remove(struct i2c_client *client)
 	if (data->power_gpio >= 0)
 		gpio_free(data->power_gpio);
 
-#ifdef TPA61XXA2_REGULATOR_REQUIRED
 	regulator_put(data->supply);
-#endif /* TPA61XXA2_REGULATOR_REQUIRED */
 	tpa6130a2_client = NULL;
 
 	return 0;
