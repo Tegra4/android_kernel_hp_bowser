@@ -38,6 +38,11 @@ static DEFINE_SPINLOCK(pmc_lock);
 static u32 utmip_rctrl_val;
 static u32 utmip_tctrl_val;
 
+#ifdef CONFIG_MACH_BOWSER
+extern int ac_status;
+extern bool g_pm_suspending;
+#endif
+
 #ifdef KERNEL_WARNING
 static void usb_phy_power_down_pmc(struct tegra_usb_pmc_data *pmc_data)
 {
@@ -185,6 +190,11 @@ static void utmip_setup_pmc_wake_detect(struct tegra_usb_pmc_data *pmc_data)
 	unsigned  int inst = pmc_data->instance;
 
 	DBG("%s(%d) inst:[%d]\n", __func__, __LINE__, pmc_data->instance);
+
+#ifdef CONFIG_MACH_BOWSER
+	if (!ac_status && g_pm_suspending)
+		return;
+#endif
 
 	spin_lock_irqsave(&pmc_lock, flags);
 

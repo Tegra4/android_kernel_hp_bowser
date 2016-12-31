@@ -212,13 +212,16 @@ int __ps2_command(struct ps2dev *ps2dev, unsigned char *param, int command)
 	 * ACKing the reset command, and so it can take a long
 	 * time before the ACK arrives.
 	 */
-	if (ps2_sendbyte(ps2dev, command & 0xff,
-			 command == PS2_CMD_RESET_BAT ? 1000 : 200))
+	if (ps2_sendbyte(ps2dev, command & 0xff, 1000)) {
+		printk("%s send command(%x) failed.\n", __func__, command);
 		goto out;
+	}
 
 	for (i = 0; i < send; i++)
-		if (ps2_sendbyte(ps2dev, param[i], 200))
+		if (ps2_sendbyte(ps2dev, param[i], 1000)) {
+			printk("%s send parameter failed. (param[%d]=%x)\n", __func__, i, param[i]);
 			goto out;
+		}
 
 	/*
 	 * The reset command takes a long time to execute.

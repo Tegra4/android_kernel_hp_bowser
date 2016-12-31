@@ -997,9 +997,17 @@ static void tegra_sdhci_reset_exit(struct sdhci_host *sdhci, u8 mask)
 
 		/* External loopback is valid for sdmmc3 only */
 		if ((soc_data->nvquirks & NVQUIRK_DISABLE_EXTERNAL_LOOPBACK) &&
-			(tegra_host->instance == 2))
-			misc_ctrl &= ~(1 <<
+			(tegra_host->instance == 2)) {
+			if ((tegra_host->tuning_status == TUNING_STATUS_DONE)
+				&& (sdhci->mmc->pm_flags &
+				MMC_PM_KEEP_POWER)) {
+				misc_ctrl &= ~(1 <<
 				SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+			} else {
+				misc_ctrl |= (1 <<
+				SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+			}
+		}
 		sdhci_writel(sdhci, misc_ctrl, SDHCI_VNDR_MISC_CTRL);
 
 		/* Mask Auto CMD23 if CMD23 is enabled */
@@ -1069,6 +1077,7 @@ static irqreturn_t carddetect_irq(int irq, void *data)
 	struct platform_device *pdev = to_platform_device(mmc_dev(sdhost->mmc));
 	struct tegra_sdhci_platform_data *plat;
 	int err;
+	u32 misc_ctrl;
 
 	plat = pdev->dev.platform_data;
 
@@ -1092,6 +1101,10 @@ static irqreturn_t carddetect_irq(int irq, void *data)
 		 */
 		tegra_host->tuning_status = TUNING_STATUS_RETUNE;
 		tegra_host->force_retune = true;
+		misc_ctrl = sdhci_readl(sdhost, SDHCI_VNDR_MISC_CTRL);
+		misc_ctrl |= (1 <<
+				SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+		sdhci_writel(sdhost, misc_ctrl, SDHCI_VNDR_MISC_CTRL);
 	}
 
 	tasklet_schedule(&sdhost->card_tasklet);
@@ -2872,11 +2885,14 @@ static int sdhci_tegra_execute_tuning(struct sdhci_host *sdhci, u32 opcode)
 	struct sdhci_pltfm_host *pltfm_host = sdhci_priv(sdhci);
 	struct sdhci_tegra *tegra_host = pltfm_host->priv;
 	struct tegra_tuning_data *tuning_data;
+	const struct sdhci_tegra_soc_data *soc_data = tegra_host->soc_data;
 	int err;
 	u16 ctrl_2;
+	u32 misc_ctrl;
 	u32 ier;
 	u8 i, set_retuning = 0;
 	bool force_retuning = false;
+	bool sdmmc3_ext_loopback;
 
 	/* Tuning is valid only in SDR104 and SDR50 modes */
 	ctrl_2 = sdhci_readw(sdhci, SDHCI_HOST_CONTROL2);
@@ -2894,6 +2910,15 @@ static int sdhci_tegra_execute_tuning(struct sdhci_host *sdhci, u32 opcode)
 		return -EINVAL;
 
 	pr_err("%s: Starting freq tuning\n", mmc_hostname(sdhci->mmc));
+	sdmmc3_ext_loopback = (soc_data->nvquirks &
+			NVQUIRK_DISABLE_EXTERNAL_LOOPBACK) &&
+			(tegra_host->instance == 2);
+	if (sdmmc3_ext_loopback) {
+		misc_ctrl = sdhci_readl(sdhci, SDHCI_VNDR_MISC_CTRL);
+		misc_ctrl &= ~(1 <<
+			SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+		sdhci_writel(sdhci, misc_ctrl, SDHCI_VNDR_MISC_CTRL);
+	}
 	mutex_lock(&tuning_mutex);
 
 	/* Set the tuning command to be used */
@@ -2982,6 +3007,21 @@ out:
 	mutex_unlock(&tuning_mutex);
 
 	pr_err("%s: Freq tuning done\n", mmc_hostname(sdhci->mmc));
+	if (sdmmc3_ext_loopback) {
+		misc_ctrl = sdhci_readl(sdhci, SDHCI_VNDR_MISC_CTRL);
+		if (err) {
+			/* Tuning is failed and card will try to enumerate in
+			 * Legacy High Speed mode. So, Enable External Loopback
+			 * for SDMMC3.
+			 */
+			misc_ctrl |= (1 <<
+				SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+		} else {
+			misc_ctrl &= ~(1 <<
+				SDHCI_VNDR_MISC_CTRL_EN_EXT_LOOPBACK_SHIFT);
+		}
+		sdhci_writel(sdhci, misc_ctrl, SDHCI_VNDR_MISC_CTRL);
+	}
 	return err;
 }
 

@@ -514,9 +514,13 @@ repeat:
 static void do_thaw_one(struct super_block *sb, void *unused)
 {
 	char b[BDEVNAME_SIZE];
-	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
+	int counter = 0;
+
+	while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb) && counter < 100){
 		printk(KERN_WARNING "Emergency Thaw on %s\n",
 		       bdevname(sb->s_bdev, b));
+		counter++;
+	}
 }
 
 static void do_thaw_all(struct work_struct *work)

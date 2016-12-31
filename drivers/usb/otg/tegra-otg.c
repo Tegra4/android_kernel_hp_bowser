@@ -51,6 +51,11 @@
 #define USB_VBUS_INT_STS_MASK	(0x7 << 8)
 #define USB_ID_INT_STS_MASK	(0x7 << 0)
 
+#define ENABLE_SW_VBUS_TRIGGER
+#if defined(ENABLE_SW_VBUS_TRIGGER) && defined(CONFIG_MACH_BOWSER)
+#define TEGRA_GPIO_PN4		108
+#endif
+
 #ifdef OTG_DEBUG
 #define DBG(stuff...)	pr_info("tegra-otg: " stuff)
 #else
@@ -525,10 +530,18 @@ static ssize_t store_host_en(struct device *dev, struct device_attribute *attr,
 		tegra_change_otg_state(tegra, OTG_STATE_A_SUSPEND);
 		tegra_change_otg_state(tegra, OTG_STATE_A_HOST);
 		tegra->interrupt_mode = false;
+#if defined(ENABLE_SW_VBUS_TRIGGER) && defined(CONFIG_MACH_BOWSER)
+		gpio_set_value(TEGRA_GPIO_PN4, 0);
+#endif
 	} else {
 		tegra->interrupt_mode = true;
 		tegra_change_otg_state(tegra, OTG_STATE_A_SUSPEND);
 		enable_interrupt(tegra, true);
+#if defined(ENABLE_SW_VBUS_TRIGGER) && defined(CONFIG_MACH_BOWSER)
+		gpio_set_value(TEGRA_GPIO_PN4, 0);
+		msleep(1000);
+		gpio_set_value(TEGRA_GPIO_PN4, 1);
+#endif
 	}
 
 	return count;

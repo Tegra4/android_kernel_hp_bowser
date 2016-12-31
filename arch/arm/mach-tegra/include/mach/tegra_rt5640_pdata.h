@@ -22,4 +22,5 @@ struct tegra_rt5640_platform_data {
 	int gpio_hp_mute;
 	int gpio_int_mic_en;
 	int gpio_ext_mic_en;
+	int gpio_lout_en;
 };

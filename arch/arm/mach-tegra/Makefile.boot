@@ -23,3 +23,4 @@ dtb-$(CONFIG_ARCH_TEGRA_11x_SOC) += tegra114-roth.dtb
 dtb-$(CONFIG_ARCH_TEGRA_11x_SOC) += tegra114-pluto.dtb
 dtb-$(CONFIG_ARCH_TEGRA_11x_SOC) += tegra114-tegratab.dtb
 dtb-$(CONFIG_ARCH_TEGRA_11x_SOC) += tegra114-tegranote7c.dtb
+dtb-$(CONFIG_ARCH_TEGRA_11x_SOC) += tegra114-bowser.dtb

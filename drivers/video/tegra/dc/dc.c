@@ -60,6 +60,10 @@
 #include "dev.h"
 #include "nvsd.h"
 
+#ifdef CONFIG_MACH_BOWSER
+#include <mach/../../tegra_emc.h>
+#endif
+
 #define TEGRA_CRC_LATCHED_DELAY		34
 
 #define DC_COM_PIN_OUTPUT_POLARITY1_INIT_VAL	0x01000000
@@ -745,6 +749,10 @@ bool tegra_dc_get_connected(struct tegra_dc *dc)
 }
 EXPORT_SYMBOL(tegra_dc_get_connected);
 
+#ifdef CONFIG_MACH_BOWSER
+extern bool is_hdmi_hotplug_init;
+#endif
+
 bool tegra_dc_hpd(struct tegra_dc *dc)
 {
 	int sense;
@@ -753,6 +761,11 @@ bool tegra_dc_hpd(struct tegra_dc *dc)
 
 	if (WARN_ON(!dc || !dc->out))
 		return false;
+
+#ifdef CONFIG_MACH_BOWSER
+	if (!is_hdmi_hotplug_init)
+		return false;
+#endif
 
 	if (dc->out->hotplug_state != 0) {
 		if (dc->out->hotplug_state == 1) /* force on */
@@ -2534,6 +2547,10 @@ static int tegra_dc_probe(struct platform_device *ndev)
 		tegra_dc_powergate_locked(dc);
 
 	tegra_dc_create_sysfs(&dc->ndev->dev);
+
+#ifdef CONFIG_MACH_BOWSER
+	tegra_emc_set_min_rate((unsigned long)204000000);
+#endif
 
 	/*
 	 * We will need to reinitialize the display the next time panel

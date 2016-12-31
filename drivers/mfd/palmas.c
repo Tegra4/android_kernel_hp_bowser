@@ -25,6 +25,9 @@
 #include <linux/err.h>
 #include <linux/mfd/core.h>
 #include <linux/mfd/palmas.h>
+#ifdef CONFIG_MACH_BOWSER
+#include <linux/delay.h>
+#endif
 
 #define EXT_PWR_REQ (PALMAS_EXT_CONTROL_ENABLE1 |	\
 			PALMAS_EXT_CONTROL_ENABLE2 |	\
@@ -912,8 +915,23 @@ static void palmas_clk32k_init(struct palmas *palmas,
 static struct palmas *palmas_dev;
 static void palmas_power_off(void)
 {
+#ifdef CONFIG_MACH_BOWSER
+	unsigned int addr;
+	unsigned int dst;
+#endif
+
 	if (!palmas_dev)
 		return;
+
+#ifdef CONFIG_MACH_BOWSER
+	/* Disable RTC alarm IRQ */
+	addr = PALMAS_BASE_TO_REG(PALMAS_RTC_BASE, PALMAS_RTC_INTERRUPTS_REG);
+	regmap_write(palmas_dev->regmap[RTC_SLAVE], addr, 0);
+
+	mdelay(20);
+	regmap_read(palmas_dev->regmap[RTC_SLAVE], addr, &dst);
+	printk("palmas_power_off : set RTC alarm IRQ [0x%x]\n", dst);
+#endif
 
 	palmas_control_update(palmas_dev, PALMAS_DEV_CTRL, 1, 0);
 }
