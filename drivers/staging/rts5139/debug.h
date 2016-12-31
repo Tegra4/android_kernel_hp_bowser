@@ -1,7 +1,7 @@
 /* Driver for Realtek RTS51xx USB card reader
  * Header file
  *
- * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.
+ * Copyright(c) 2009 Realtek Semiconductor Corp. All rights reserved.  
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -14,13 +14,10 @@
  * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program; if not, see <http://www.gnu.org/licenses/>.
+ * with this program; if not, see <http:
  *
  * Author:
  *   wwang (wei_wang@realsil.com.cn)
- *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
- * Maintainer:
- *   Edwin Rong (edwin_rong@realsil.com.cn)
  *   No. 450, Shenhu Road, Suzhou Industry Park, Suzhou, China
  */
 
@@ -28,19 +25,25 @@
 #define __RTS51X_DEBUG_H
 
 #include <linux/kernel.h>
+#include "define.h"
 
 #define RTS51X_TIP "rts51x: "
 
-#ifdef CONFIG_RTS5139_DEBUG
-#define RTS51X_DEBUGP(x...) printk(KERN_DEBUG RTS51X_TIP x)
-#define RTS51X_DEBUGPN(x...) printk(KERN_DEBUG x)
-#define RTS51X_DEBUGPX(x...) printk(x)
-#define RTS51X_DEBUG(x) x
+#if DBG
+#define DEBUGP(x...) printk( KERN_DEBUG RTS51X_TIP x )
+#define DEBUGPN(x...) printk( KERN_DEBUG x )
+#define DEBUGPX(x...) printk( x )
+#define DEBUGDO(x) x
 #else
-#define RTS51X_DEBUGP(x...)
-#define RTS51X_DEBUGPN(x...)
-#define RTS51X_DEBUGPX(x...)
-#define RTS51X_DEBUG(x)
+#define DEBUGP(x...)
+#define DEBUGPN(x...)
+#define DEBUGPX(x...)
+#define DEBUGDO(x)
 #endif
 
-#endif /* __RTS51X_DEBUG_H */
+#define RTS51X_DEBUGP(x) DEBUGP x
+#define RTS51X_DEBUGPN(x) DEBUGPN x
+#define RTS51X_DEBUGDO(x) DEBUGDO(x)
+
+#endif   
+

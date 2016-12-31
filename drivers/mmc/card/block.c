@@ -139,9 +139,38 @@ enum {
 	MMC_PACKED_NR_SINGLE,
 };
 
+const char* blk_secure_erase_blacklist[] = {
+	"SEM16G",
+	"SEM32G",
+	"SEM64G",
+	"MAG2GA",
+	"MBG4GA",
+	"MCG8GA",
+	NULL
+};
+
 module_param(perdev_minors, int, 0444);
 MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per device");
 
+static inline int mmc_blk_ignore_secure_erase(const char* name) {
+	int i = 0;
+
+	if (! name || ! strlen(name)) {
+		pr_info("Device name is unknown or empty\n");
+		return 0;
+	}
+
+	while (blk_secure_erase_blacklist[i]) {
+		if (! strcmp(blk_secure_erase_blacklist[i], name)) {
+			pr_info("Device %s is in secure erase blacklist\n",
+			       name);
+			return 1;
+		}
+		++i;
+	}
+
+	return 0;
+}
 
 static inline void mmc_blk_clear_packed(struct mmc_queue_req *mqrq)
 {
@@ -913,7 +942,12 @@ static int mmc_blk_issue_secdiscard_rq(struct mmc_queue *mq,
 	nr = blk_rq_sectors(req);
 
 	/* The sanitize operation is supported at v4.5 only */
+#ifdef CONFIG_MACH_BOWSER
+	if (mmc_can_sanitize(card) ||
+	    mmc_blk_ignore_secure_erase(mmc_card_name(card))) {
+#else
 	if (mmc_can_sanitize(card)) {
+#endif
 		erase_arg = MMC_ERASE_ARG;
 		trim_arg = MMC_TRIM_ARG;
 	} else {
@@ -1888,6 +1922,9 @@ out:
 
 static inline int mmc_blk_readonly(struct mmc_card *card)
 {
+#ifdef CONFIG_MACH_BOWSER
+	return 0;
+#endif
 	return mmc_card_readonly(card) ||
 	       !(card->csd.cmdclass & CCC_BLOCK_WRITE);
 }
@@ -2183,6 +2220,7 @@ force_ro_fail:
 #define CID_MANFID_TOSHIBA	0x11
 #define CID_MANFID_MICRON	0x13
 #define CID_MANFID_SAMSUNG	0x15
+#define CID_MANFID_KINGSTON     0x41
 
 static const struct mmc_fixup blk_fixups[] =
 {
@@ -2205,6 +2243,8 @@ static const struct mmc_fixup blk_fixups[] =
 	 *
 	 * N.B. This doesn't affect SD cards.
 	 */
+	MMC_FIXUP(CID_NAME_ANY, CID_MANFID_KINGSTON, CID_OEMID_ANY, add_quirk,
+                  MMC_QUIRK_BLK_NO_CMD23),
 	MMC_FIXUP("MMC08G", CID_MANFID_TOSHIBA, CID_OEMID_ANY, add_quirk_mmc,
 		  MMC_QUIRK_BLK_NO_CMD23),
 	MMC_FIXUP("MMC16G", CID_MANFID_TOSHIBA, CID_OEMID_ANY, add_quirk_mmc,

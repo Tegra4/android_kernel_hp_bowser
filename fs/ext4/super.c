@@ -4541,7 +4541,9 @@ static int ext4_remount(struct super_block *sb, int *flags, char *data)
 		dquot_resume(sb, -1);
 
 	ext4_msg(sb, KERN_INFO, "re-mounted. Opts: %s", orig_data);
-	kfree(orig_data);
+
+	if(orig_data)
+		kfree(orig_data);
 	return 0;
 
 restore_opts:

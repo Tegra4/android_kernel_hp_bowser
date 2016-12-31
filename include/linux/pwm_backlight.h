@@ -22,6 +22,8 @@
 #include <linux/backlight.h>
 #include <linux/platform_device.h>
 
+#define BOWSER_BL_TOTAL_LEVEL		11
+
 enum tegra_pwm_bl_edp_states {
 	TEGRA_PWM_BL_EDP_NEG_3,
 	TEGRA_PWM_BL_EDP_NEG_2,
@@ -51,6 +53,7 @@ struct platform_pwm_backlight_data {
 	void (*notify_after)(struct device *dev, int brightness);
 	void (*exit)(struct device *dev);
 	int (*check_fb)(struct device *dev, struct fb_info *info);
+	int (*get_brightness)(struct device *dev, int level);
 };
 
 struct of_tegra_pwm_bl_devdata {

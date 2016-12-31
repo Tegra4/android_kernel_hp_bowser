@@ -341,6 +341,14 @@ config MACH_ROTH
        help
          Support for NVIDIA THOR development platform
 
+config MACH_BOWSER
+       bool "Bowser board"
+       depends on ARCH_TEGRA_11x_SOC
+       select MACH_HAS_SND_SOC_TEGRA_RT5639 if SND_SOC
+       select MACH_HAS_SND_SOC_TEGRA_RT5640 if SND_SOC
+       help
+         Support for HP BOWSER platform
+
 config MACH_TEGRATAB
        bool "Tegratab board"
        depends on ARCH_TEGRA_11x_SOC

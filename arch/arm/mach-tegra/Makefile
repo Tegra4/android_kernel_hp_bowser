@@ -344,6 +344,18 @@ obj-${CONFIG_MACH_TEGRA_PLUTO}          += panel-l-720p-5.o
 obj-${CONFIG_MACH_TEGRA_PLUTO}          += panel-j-720p-4-7.o
 obj-${CONFIG_MACH_TEGRA_PLUTO}          += panel-s-1080p-5.o
 
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-memory.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-pinmux.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-power.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-powermon.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-sdhci.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-panel.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-kbc.o
+obj-${CONFIG_MACH_BOWSER}                 += board-bowser-sensors.o
+obj-${CONFIG_MACH_BOWSER}                 += panel-a-768p-10-1.o
+obj-${CONFIG_MACH_BOWSER}                 += panel-a-1080p-10-1.o
+
 obj-${CONFIG_TEGRA_BB_XMM_POWER}        += baseband-xmm-power.o
 obj-${CONFIG_TEGRA_BB_XMM_POWER2}       += baseband-xmm-power2.o
 

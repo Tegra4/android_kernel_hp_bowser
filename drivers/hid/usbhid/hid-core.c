@@ -1192,6 +1192,11 @@ static int usbhid_start(struct hid_device *hid)
 		usbhid_set_leds(hid);
 		device_set_wakeup_enable(&dev->dev, 1);
 	}
+#ifdef CONFIG_MACH_BOWSER
+	if (interface->desc.bInterfaceProtocol == USB_INTERFACE_PROTOCOL_MOUSE) {
+		device_set_wakeup_enable(&dev->dev, 1);
+	}
+#endif
 	return 0;
 
 fail:

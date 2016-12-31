@@ -190,6 +190,7 @@ config SND_SOC_TEGRA_RT5639
 	select SND_SOC_RT5639
 	select SND_SOC_SPDIF
 	select SND_SOC_TEGRA30_DAM if !ARCH_TEGRA_2x_SOC
+	select SND_SOC_TPA6130A2
 	help
 	  Say Y or M here if you want to add support for SoC audio on Tegra
 	  boards using the ALC5639 codec. Currently, the supported board
