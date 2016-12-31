@@ -316,6 +316,11 @@ static void pm_suspend_marker(char *annotation)
 		tm.tm_hour, tm.tm_min, tm.tm_sec, ts.tv_nsec);
 }
 
+#ifdef CONFIG_MACH_BOWSER
+bool g_pm_suspending = false;
+EXPORT_SYMBOL(g_pm_suspending);
+#endif
+
 /**
  * pm_suspend - Externally visible function for suspending the system.
  * @state: System sleep state to enter.
@@ -331,6 +336,9 @@ int pm_suspend(suspend_state_t state)
 		return -EINVAL;
 
 	pm_suspend_marker("entry");
+#ifdef CONFIG_MACH_BOWSER
+	g_pm_suspending = true;
+#endif
 	error = enter_state(state);
 	if (error) {
 		suspend_stats.fail++;
@@ -339,6 +347,9 @@ int pm_suspend(suspend_state_t state)
 		suspend_stats.success++;
 	}
 	pm_suspend_marker("exit");
+#ifdef CONFIG_MACH_BOWSER
+	g_pm_suspending = false;
+#endif
 	return error;
 }
 EXPORT_SYMBOL(pm_suspend);

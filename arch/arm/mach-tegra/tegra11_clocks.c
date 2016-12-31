@@ -381,6 +381,24 @@
 #define PMC_BLINK_TIMER_DATA_OFF_SHIFT	16
 #define PMC_BLINK_TIMER_DATA_OFF_MASK	0xffff
 
+#ifdef CONFIG_MACH_BOWSER
+#define CLK2_OUT_ALWAYS_ON
+#endif
+
+#ifdef CLK2_OUT_ALWAYS_ON
+#define PMC_OSC_EDPD_OVER		0x1a4
+#define PMC_OSC_EDPD_OVER_XO_LP0_MODE_MASK		(0x3 << 20)
+#define PMC_OSC_EDPD_OVER_XO_LP0_MODE_DPD		(0x0 << 20)
+#define PMC_OSC_EDPD_OVER_XO_LP0_MODE_EXT_REQ		(0x3 << 20)
+#define PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_MASK		(0x1 << 22)
+#define PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_CAR		(0x0 << 22)
+#define PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_PMC		(0x1 << 22)
+
+#define PMC_CLK_OUT_CNTRL_CLK_NUM(x) ((x-2) / 8 + 1)
+#define PMC_CLK_OUT_CNTRL_CLK_ACCEPT_REQ_SHIFT(x)	((x - 1) * 8)
+#define PMC_CLK_OUT_CNTRL_CLK_INVERT_REQ_SHIFT(x)	((x - 1) * 8 + 1)
+#endif
+
 #define UTMIP_PLL_CFG2					0x488
 #define UTMIP_PLL_CFG2_STABLE_COUNT(x)			(((x) & 0xfff) << 6)
 #define UTMIP_PLL_CFG2_ACTIVE_DLY_COUNT(x)		(((x) & 0x3f) << 18)
@@ -4519,8 +4537,22 @@ static int tegra11_clk_out_enable(struct clk *c)
 	pr_debug("%s on clock %s\n", __func__, c->name);
 
 	spin_lock_irqsave(&clk_out_lock, flags);
+#ifdef CLK2_OUT_ALWAYS_ON
+	if (PMC_CLK_OUT_CNTRL_CLK_NUM(c->u.periph.clk_num) == 2) {
+		val = pmc_readl(PMC_OSC_EDPD_OVER);
+		val &= ~(PMC_OSC_EDPD_OVER_XO_LP0_MODE_MASK | PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_MASK);
+		val |= (PMC_OSC_EDPD_OVER_XO_LP0_MODE_EXT_REQ | PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_PMC);
+		pmc_writel(val, PMC_OSC_EDPD_OVER);
+	}
+#endif
 	val = pmc_readl(c->reg);
 	val |= (0x1 << c->u.periph.clk_num);
+#ifdef CLK2_OUT_ALWAYS_ON
+	if (PMC_CLK_OUT_CNTRL_CLK_NUM(c->u.periph.clk_num) == 2) {
+		val |= (0x1 << PMC_CLK_OUT_CNTRL_CLK_ACCEPT_REQ_SHIFT(2));
+		val |= (0x1 << PMC_CLK_OUT_CNTRL_CLK_INVERT_REQ_SHIFT(2));
+	}
+#endif
 	pmc_writel(val, c->reg);
 	spin_unlock_irqrestore(&clk_out_lock, flags);
 
@@ -4536,8 +4568,22 @@ static void tegra11_clk_out_disable(struct clk *c)
 
 	spin_lock_irqsave(&clk_out_lock, flags);
 	val = pmc_readl(c->reg);
+#ifdef CLK2_OUT_ALWAYS_ON
+	if (PMC_CLK_OUT_CNTRL_CLK_NUM(c->u.periph.clk_num) == 2) {
+		val &= ~(0x1 << PMC_CLK_OUT_CNTRL_CLK_ACCEPT_REQ_SHIFT(2));
+		val &= ~(0x1 << PMC_CLK_OUT_CNTRL_CLK_INVERT_REQ_SHIFT(2));
+	}
+#endif
 	val &= ~(0x1 << c->u.periph.clk_num);
 	pmc_writel(val, c->reg);
+#ifdef CLK2_OUT_ALWAYS_ON
+	if (PMC_CLK_OUT_CNTRL_CLK_NUM(c->u.periph.clk_num) == 2) {
+		val = pmc_readl(PMC_OSC_EDPD_OVER);
+		val &= ~(PMC_OSC_EDPD_OVER_XO_LP0_MODE_MASK | PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_MASK);
+		val |= (PMC_OSC_EDPD_OVER_XO_LP0_MODE_DPD | PMC_OSC_EDPD_OVER_OSC_CTRL_SEL_CAR);
+		pmc_writel(val, PMC_OSC_EDPD_OVER);
+	}
+#endif
 	spin_unlock_irqrestore(&clk_out_lock, flags);
 }
 
@@ -6624,7 +6670,11 @@ static struct clk tegra_clk_emc = {
 	.ops = &tegra_emc_clk_ops,
 	.reg = 0x19c,
 	.max_rate = 1066000000,
+#ifndef CONFIG_MACH_BOWSER
 	.min_rate = 12750000,
+#else
+	.min_rate = 204000000,
+#endif
 	.inputs = mux_pllm_pllc_pllp_clkm,
 	.flags = MUX | MUX8 | DIV_U71 | PERIPH_EMC_ENB,
 	.u.periph = {

@@ -1900,9 +1900,22 @@ EXPORT_SYMBOL_GPL(snd_soc_read);
 unsigned int snd_soc_write(struct snd_soc_codec *codec,
 			   unsigned int reg, unsigned int val)
 {
+    int result = 0, i = 0;
+
 	dev_dbg(codec->dev, "write %x = %x\n", reg, val);
 	trace_snd_soc_reg_write(codec, reg, val);
-	return codec->write(codec, reg, val);
+	while(i < 10) {
+		result = codec->write(codec, reg, val);
+		if(result < 0) {
+			dev_err(codec->dev, "write %x = %x, result = %d\n", reg, val, result);
+			i++;
+			mdelay(100);
+		}
+		else
+			break;
+	}
+
+	return result;
 }
 EXPORT_SYMBOL_GPL(snd_soc_write);
 

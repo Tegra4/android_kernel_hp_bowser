@@ -69,6 +69,9 @@
 #define GPIO_INT_MIC_EN BIT(2)
 #define GPIO_EXT_MIC_EN BIT(3)
 #define GPIO_HP_DET     BIT(4)
+#ifdef CONFIG_MACH_BOWSER
+#define GPIO_LOUT_EN    BIT(5)
+#endif
 
 #define DAI_LINK_HIFI		0
 #define DAI_LINK_SPDIF		1
@@ -1364,6 +1367,24 @@ err_null_spk_edp_client:
 
 	gpio_set_value_cansleep(pdata->gpio_spkr_en,
 				!!SND_SOC_DAPM_EVENT_ON(event));
+#ifdef CONFIG_MACH_BOWSER
+	return 0;
+}
+
+static int tegra_rt5640_event_lout(struct snd_soc_dapm_widget *w,
+					struct snd_kcontrol *k, int event)
+{
+	struct snd_soc_dapm_context *dapm = w->dapm;
+	struct snd_soc_card *card = dapm->card;
+	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(card);
+	struct tegra_asoc_platform_data *pdata = machine->pdata;
+
+	if (!(machine->gpio_requested & GPIO_LOUT_EN))
+		return 0;
+
+	gpio_set_value_cansleep(pdata->gpio_lout_en,
+				!!SND_SOC_DAPM_EVENT_ON(event));
+#endif
 
 	return 0;
 }
@@ -1435,6 +1456,9 @@ static int tegra_rt5640_event_ext_mic(struct snd_soc_dapm_widget *w,
 
 static const struct snd_soc_dapm_widget tegra_rt5640_dapm_widgets[] = {
 	SND_SOC_DAPM_SPK("Int Spk", tegra_rt5640_event_int_spk),
+#ifdef CONFIG_MACH_BOWSER
+	SND_SOC_DAPM_LINE("Lout", tegra_rt5640_event_lout),
+#endif
 	SND_SOC_DAPM_HP("Headphone Jack", tegra_rt5640_event_hp),
 	SND_SOC_DAPM_MIC("Mic Jack", tegra_rt5640_event_ext_mic),
 	SND_SOC_DAPM_MIC("Int Mic", tegra_rt5640_event_int_mic),
@@ -1447,6 +1471,10 @@ static const struct snd_soc_dapm_route tegra_rt5640_audio_map[] = {
 	{"Int Spk", NULL, "SPORN"},
 	{"Int Spk", NULL, "SPOLP"},
 	{"Int Spk", NULL, "SPOLN"},
+#ifdef CONFIG_MACH_BOWSER
+	{"Lout", NULL, "LOUTL"},
+	{"Lout", NULL, "LOUTR"},
+#endif
 	{"micbias1", NULL, "Mic Jack"},
 	{"IN1P", NULL, "micbias1"},
 	{"IN1N", NULL, "micbias1"},
@@ -1475,6 +1503,9 @@ static const struct snd_soc_dapm_route tegra_rt5640_no_micbias_audio_map[] = {
 
 static const struct snd_kcontrol_new tegra_rt5640_controls[] = {
 	SOC_DAPM_PIN_SWITCH("Int Spk"),
+#ifdef CONFIG_MACH_BOWSER
+	SOC_DAPM_PIN_SWITCH("Lout"),
+#endif
 	SOC_DAPM_PIN_SWITCH("Headphone Jack"),
 	SOC_DAPM_PIN_SWITCH("Mic Jack"),
 	SOC_DAPM_PIN_SWITCH("Int Mic"),
@@ -1483,7 +1514,9 @@ static const struct snd_kcontrol_new tegra_rt5640_controls[] = {
 static int tegra_rt5640_init(struct snd_soc_pcm_runtime *rtd)
 {
 	struct snd_soc_codec *codec = rtd->codec;
+#ifndef CONFIG_MACH_BOWSER
 	struct snd_soc_dapm_context *dapm = &codec->dapm;
+#endif
 	struct snd_soc_card *card = codec->card;
 	struct tegra_rt5640 *machine = snd_soc_card_get_drvdata(card);
 	struct tegra_asoc_platform_data *pdata = machine->pdata;
@@ -1575,6 +1608,21 @@ static int tegra_rt5640_init(struct snd_soc_pcm_runtime *rtd)
 		enable_irq_wake(gpio_to_irq(tegra_rt5640_hp_jack_gpio.gpio));
 	}
 
+#ifdef CONFIG_MACH_BOWSER
+	if (gpio_is_valid(pdata->gpio_lout_en)) {
+		ret = gpio_request(pdata->gpio_lout_en, "lout_en");
+		if (ret) {
+			dev_err(card->dev, "cannot get lout_en gpio\n");
+			return ret;
+		}
+		machine->gpio_requested |= GPIO_LOUT_EN;
+
+		gpio_export(pdata->gpio_lout_en, false);
+
+		gpio_direction_output(pdata->gpio_lout_en, 0);
+	}
+#endif
+
 	/* Add call mode switch control */
 	ret = snd_ctl_add(codec->card->snd_card,
 		snd_ctl_new1(&tegra_rt5640_call_mode_control, machine));
@@ -1587,10 +1635,12 @@ static int tegra_rt5640_init(struct snd_soc_pcm_runtime *rtd)
 		return ret;
 
 	/* FIXME: Calculate automatically based on DAPM routes? */
+#ifndef CONFIG_MACH_BOWSER
 	snd_soc_dapm_nc_pin(dapm, "LOUTL");
 	snd_soc_dapm_nc_pin(dapm, "LOUTR");
 
 	snd_soc_dapm_sync(dapm);
+#endif
 
 	return 0;
 }
@@ -1708,7 +1758,9 @@ static struct snd_soc_card snd_soc_tegra_rt5640 = {
 	.num_dapm_widgets = ARRAY_SIZE(tegra_rt5640_dapm_widgets),
 	.dapm_routes = tegra_rt5640_audio_map,
 	.num_dapm_routes = ARRAY_SIZE(tegra_rt5640_audio_map),
+#ifndef CONFIG_MACH_BOWSER
 	.fully_routed = true,
+#endif
 };
 
 void tegra_asoc_enable_clocks()

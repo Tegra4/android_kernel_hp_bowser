@@ -38,6 +38,10 @@
 	.store = power_supply_store_property,				\
 }
 
+#ifdef CONFIG_MACH_BOWSER
+int ac_status = 1;
+#endif
+
 static struct device_attribute power_supply_attrs[];
 
 static ssize_t power_supply_show_property(struct device *dev,
@@ -87,6 +91,11 @@ static ssize_t power_supply_show_property(struct device *dev,
 		return ret;
 	}
 
+#ifdef CONFIG_MACH_BOWSER
+	if (off == POWER_SUPPLY_PROP_ONLINE)
+		ac_status = value.intval;
+#endif
+
 	if (off == POWER_SUPPLY_PROP_STATUS)
 		return sprintf(buf, "%s\n", status_text[value.intval]);
 	else if (off == POWER_SUPPLY_PROP_CHARGE_TYPE)
@@ -106,6 +115,10 @@ static ssize_t power_supply_show_property(struct device *dev,
 
 	return sprintf(buf, "%d\n", value.intval);
 }
+
+#ifdef CONFIG_MACH_BOWSER
+EXPORT_SYMBOL(ac_status);
+#endif
 
 static ssize_t power_supply_store_property(struct device *dev,
 					   struct device_attribute *attr,

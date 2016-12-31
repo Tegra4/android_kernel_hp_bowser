@@ -52,7 +52,7 @@
 #define VERSION "1.11"
 
 static bool disable_cfc;
-static bool l2cap_ertm;
+static bool l2cap_ertm = 1;
 static int channel_mtu = -1;
 static unsigned int l2cap_mtu = RFCOMM_MAX_L2CAP_MTU;
 
@@ -2012,6 +2012,9 @@ static int rfcomm_add_listener(bdaddr_t *ba)
 	sk = sock->sk;
 	lock_sock(sk);
 	l2cap_pi(sk)->chan->imtu = l2cap_mtu;
+	if (l2cap_ertm)
+		l2cap_pi(sk)->chan->mode = L2CAP_MODE_ERTM;
+
 	release_sock(sk);
 
 	/* Start listening on the socket */

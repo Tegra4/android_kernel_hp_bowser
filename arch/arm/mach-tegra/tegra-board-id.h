@@ -22,7 +22,11 @@
 #define _MACH_TEGRA_BOARD_ID_H
 
 /* Processor Board  ID */
+#ifndef CONFIG_MACH_BOWSER
 #define BOARD_E1611   0x064B
+#else
+#define BOARD_E1611   0x200A
+#endif
 #define BOARD_E1612   0x064C
 #define BOARD_E1613   0x064D
 #define BOARD_E1614   0x064E

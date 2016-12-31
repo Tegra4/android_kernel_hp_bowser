@@ -2142,6 +2142,9 @@ struct rt5640_priv {
 	int dsp_sw;
 	struct mutex lock;
 	int shutdown_complete;
+#ifdef CONFIG_MACH_BOWSER
+	int ext_amp;
+#endif
 };
 
 

@@ -1,0 +1,20 @@
+menu "Bowser Base"
+
+menuconfig BOWSER_BASE
+        tristate "Bowser Base Support"
+        help
+          Add support for Bowser Base.
+
+if BOWSER_BASE
+
+config BOWSER_BASE_CONTROLLER
+	tristate "Bowser base controller driver"
+	depends on IO373B_SMBD
+	help
+	  This enable Bowser base controller which detects base and
+	  synchronize info onto it.
+
+source "drivers/staging/bowser_base/io373x-b/Kconfig"
+
+endif # BOWSER_BASE
+endmenu

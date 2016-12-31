@@ -31,6 +31,9 @@
 #include <linux/moduleparam.h>
 #include <linux/seq_file.h>
 #include <linux/syscore_ops.h>
+#ifdef CONFIG_MACH_BOWSER
+#include <linux/bowser_misc.h>
+#endif
 
 #include <mach/iomap.h>
 
@@ -244,6 +247,10 @@ static void tegra_pm_irq_syscore_resume_helper(
 	int wake;
 	int irq;
 	struct irq_desc *desc;
+#ifdef CONFIG_MACH_BOWSER
+	int i = 0;
+	int num_to_wake_android[] = {0, 8, 27, 39, 41, 42, 51, -1};
+#endif
 
 	for_each_set_bit(wake, &wake_status, sizeof(wake_status) * 8) {
 		irq = tegra_wake_to_irq(wake + 32 * index);
@@ -259,6 +266,15 @@ static void tegra_pm_irq_syscore_resume_helper(
 				(wake + 32 * index), irq);
 			continue;
 		}
+
+#ifdef CONFIG_MACH_BOWSER
+		do {
+			if ((wake + 32 * index) == num_to_wake_android[i]) {
+				bowser_set_screen_state(1);
+				break;
+			}
+		} while (num_to_wake_android[i++] != -1);
+#endif
 
 		pr_info("Resume caused by WAKE%d, %s\n", (wake + 32 * index),
 			desc->action->name);

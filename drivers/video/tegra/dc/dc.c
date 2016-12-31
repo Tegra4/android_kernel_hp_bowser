@@ -745,6 +745,10 @@ bool tegra_dc_get_connected(struct tegra_dc *dc)
 }
 EXPORT_SYMBOL(tegra_dc_get_connected);
 
+#ifdef CONFIG_MACH_BOWSER
+extern bool is_hdmi_hotplug_init;
+#endif
+
 bool tegra_dc_hpd(struct tegra_dc *dc)
 {
 	int sense;
@@ -753,6 +757,11 @@ bool tegra_dc_hpd(struct tegra_dc *dc)
 
 	if (WARN_ON(!dc || !dc->out))
 		return false;
+
+#ifdef CONFIG_MACH_BOWSER
+	if (!is_hdmi_hotplug_init)
+		return false;
+#endif
 
 	if (dc->out->hotplug_state != 0) {
 		if (dc->out->hotplug_state == 1) /* force on */

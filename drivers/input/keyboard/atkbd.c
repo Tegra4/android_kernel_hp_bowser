@@ -28,6 +28,12 @@
 #include <linux/libps2.h>
 #include <linux/mutex.h>
 #include <linux/dmi.h>
+#include <linux/unistd.h>
+#include <linux/uaccess.h>
+#include <linux/bowser_misc.h>
+
+struct work_struct otg_switch_work;
+int otg_host_sw_flag = 0;
 
 #define DRIVER_DESC	"AT and PS/2 keyboard driver"
 
@@ -142,7 +148,7 @@ static const unsigned short atkbd_unxlate_table[128] = {
 #define ATKBD_CMD_RESET_DEF	0x00f6	/* Reset to defaults */
 #define ATKBD_CMD_SETALL_MB	0x00f8	/* Set all keys to give break codes */
 #define ATKBD_CMD_SETALL_MBR	0x00fa  /* ... and repeat */
-#define ATKBD_CMD_RESET_BAT	0x02ff
+#define ATKBD_CMD_RESET_BAT	0x01ff
 #define ATKBD_CMD_RESEND	0x00fe
 #define ATKBD_CMD_EX_ENABLE	0x10ea
 #define ATKBD_CMD_EX_SETLEDS	0x20eb
@@ -302,6 +308,52 @@ static const unsigned int xl_table[] = {
 	ATKBD_RET_NAK, ATKBD_RET_HANJA, ATKBD_RET_HANGEUL,
 };
 
+static struct work_struct work_wake;
+static struct input_dev *event_pipe;
+
+static int create_event_pipe(void)
+{
+	int err;
+
+	printk("%s() start\n",__func__);
+
+	event_pipe = input_allocate_device();
+
+	event_pipe->name = "Bowser KB Wake Event";
+
+	set_bit(EV_KEY, event_pipe->evbit);
+	set_bit(KEY_WAKEUP_DROPPED, event_pipe->keybit);
+
+	err = input_register_device(event_pipe);
+	if (err) {
+		printk("%s: Failed to register input device\n", __func__);
+		event_pipe = NULL;
+	}
+
+	return 1;
+}
+
+static void send_wakeup_event(struct work_struct *w)
+{
+	printk("%s() start\n",__func__);
+
+	if (!event_pipe) {
+		printk("%s() event_pipe is null.\n",__func__);
+		return;
+	}
+
+	input_report_key(event_pipe, KEY_WAKEUP_DROPPED,1);
+	input_sync(event_pipe);
+
+	msleep(200);
+
+	input_report_key(event_pipe, KEY_WAKEUP_DROPPED,0);
+	input_sync(event_pipe);
+
+	return;
+}
+
+
 /*
  * Checks if we should mangle the scancode to extract 'release' bit
  * in translated mode.
@@ -358,6 +410,118 @@ static unsigned int atkbd_compat_scancode(struct atkbd *atkbd, unsigned int code
 	return code;
 }
 
+
+void otg_switch_callback_function(struct work_struct *w)
+{
+	static char buf[1];
+	struct file* filp = NULL;
+	mm_segment_t oldfs;
+	ssize_t ret;
+
+	if(otg_host_sw_flag)
+		sprintf(buf,"%s","1");
+	else
+		sprintf(buf,"%s","0");
+
+	oldfs = get_fs();
+	set_fs(get_ds());
+
+	filp = filp_open("/sys/devices/platform/tegra-otg/enable_host", O_RDWR, 0);
+	ret=filp->f_op->write(filp,buf,sizeof(buf),&filp->f_pos);
+
+	if(ret>=0) {
+		printk("%s: Set /sys/devices/platform/tegra-otg/enable_host = %s\n", __func__, buf);
+	}
+	else {
+		printk("%s: Failed to set /sys/devices/platform/tegra-otg/enable_host\n", __func__);
+	}
+
+	filp_close(filp, NULL);
+
+	//write down info to /data/misc/usbotg/mode
+	filp = filp_open("/data/misc/usbotg/mode",O_CREAT | O_RDWR, 0644);
+	ret=filp->f_op->write(filp,buf,sizeof(buf),&filp->f_pos);
+
+	filp_close(filp, NULL);
+	set_fs(oldfs);
+
+}
+
+static int atkbd_check_media_keycode(struct serio *serio, struct atkbd *atkbd,
+				unsigned int code, unsigned char data)
+{
+	unsigned short keycode;
+
+	if (atkbd_platform_scancode_fixup)
+		code = atkbd_platform_scancode_fixup(atkbd, code);
+
+	if (atkbd->translated) {
+
+		if (atkbd->emul || atkbd_need_xlate(atkbd->xl_bit, code)) {
+			atkbd->release = code >> 7;
+			code &= 0x7f;
+		}
+
+		if (!atkbd->emul)
+			atkbd_calculate_xl_bit(atkbd, data);
+	}
+
+	switch (code) {
+	case ATKBD_RET_BAT:
+		atkbd->enabled = false;
+		serio_reconnect(atkbd->ps2dev.serio);
+		goto out;
+	case ATKBD_RET_EMUL0:
+		atkbd->emul = 1;
+		goto out;
+	case ATKBD_RET_EMUL1:
+		atkbd->emul = 2;
+		goto out;
+	case ATKBD_RET_RELEASE:
+		atkbd->release = true;
+		goto out;
+	case ATKBD_RET_ACK:
+	case ATKBD_RET_NAK:
+		if (printk_ratelimit())
+			dev_warn(&serio->dev,
+				 "Spurious %s on %s. "
+				 "Some program might be trying access hardware directly.\n",
+				 data == ATKBD_RET_ACK ? "ACK" : "NAK", serio->phys);
+		goto out;
+	case ATKBD_RET_ERR:
+		atkbd->err_count++;
+		dev_dbg(&serio->dev, "Keyboard on %s reports too many keys pressed.\n",
+			serio->phys);
+		goto out;
+	}
+
+	code = atkbd_compat_scancode(atkbd, code);
+
+	if (atkbd->emul && --atkbd->emul)
+		goto out;
+
+	keycode = atkbd->keycode[code];
+
+	atkbd->release = false;
+
+	switch (keycode) {
+		case KEY_MUTE:
+		case KEY_VOLUMEDOWN:
+		case KEY_VOLUMEUP:
+		case KEY_NEXTSONG:
+		case KEY_PLAYPAUSE:
+		case KEY_PREVIOUSSONG:
+			printk("%s() this is a media key(keycode=%d)\n", __func__, keycode);
+			return 0;
+		default:
+			break;
+	}
+
+	return keycode;
+out:
+	return -1;
+}
+
 /*
  * atkbd_interrupt(). Here takes place processing of data received from
  * the keyboard into events.
@@ -372,6 +536,7 @@ static irqreturn_t atkbd_interrupt(struct serio *serio, unsigned char data,
 	int scroll = 0, hscroll = 0, click = -1;
 	int value;
 	unsigned short keycode;
+	int keycode_media;
 
 	dev_dbg(&serio->dev, "Received %02x flags %02x\n", data, flags);
 
@@ -395,8 +560,15 @@ static irqreturn_t atkbd_interrupt(struct serio *serio, unsigned char data,
 		if  (ps2_handle_response(&atkbd->ps2dev, data))
 			goto out;
 
-	if (!atkbd->enabled)
+	if (!atkbd->enabled) {
+		printk("%s() atkbd is not enabled code=%x\n", __func__, code);
+		keycode_media = atkbd_check_media_keycode(serio, atkbd, code, data);
+		printk("%s() keycode=%x\n", __func__, keycode_media);
+		if (keycode_media <= 0)
+			goto out;
+		schedule_work(&work_wake);
 		goto out;
+	}
 
 	input_event(dev, EV_MSC, MSC_RAW, code);
 
@@ -457,14 +629,24 @@ static irqreturn_t atkbd_interrupt(struct serio *serio, unsigned char data,
 	case ATKBD_KEY_NULL:
 		break;
 	case ATKBD_KEY_UNKNOWN:
-		dev_warn(&serio->dev,
-			 "Unknown key %s (%s set %d, code %#x on %s).\n",
-			 atkbd->release ? "released" : "pressed",
-			 atkbd->translated ? "translated" : "raw",
-			 atkbd->set, code, serio->phys);
-		dev_warn(&serio->dev,
-			 "Use 'setkeycodes %s%02x <keycode>' to make it known.\n",
-			 code & 0x80 ? "e0" : "", code & 0x7f);
+		if ((code & 0x7f) == 0x11) {
+			otg_host_sw_flag = 1;
+			schedule_work(&otg_switch_work);
+		} else if ((code & 0x7f) == 0x12) {
+			otg_host_sw_flag = 0;
+			schedule_work(&otg_switch_work);
+		} else if ((code & 0x7f) == 0x13) {
+			bowser_ec_ram_dump();
+		} else {
+			dev_warn(&serio->dev,
+				 "Unknown key %s (%s set %d, code %#x on %s).\n",
+				 atkbd->release ? "released" : "pressed",
+				 atkbd->translated ? "translated" : "raw",
+				 atkbd->set, code, serio->phys);
+			dev_warn(&serio->dev,
+				 "Use 'setkeycodes %s%02x <keycode>' to make it known.\n",
+				 code & 0x80 ? "e0" : "", code & 0x7f);
+		}
 		input_sync(dev);
 		break;
 	case ATKBD_SCR_1:
@@ -853,6 +1035,10 @@ static void atkbd_cleanup(struct serio *serio)
 	struct atkbd *atkbd = serio_get_drvdata(serio);
 
 	atkbd_disable(atkbd);
+
+	/* [Maya] Make sure we don't have a command in flight. */
+	cancel_delayed_work_sync(&atkbd->event_work);
+
 	ps2_command(&atkbd->ps2dev, NULL, ATKBD_CMD_RESET_DEF);
 }
 
@@ -989,6 +1175,12 @@ static void atkbd_set_keycode_table(struct atkbd *atkbd)
 					if ((scancode | 0x80) == atkbd_scroll_keys[j].set2)
 						atkbd->keycode[i | 0x80] = atkbd_scroll_keys[j].keycode;
 		}
+		atkbd->keycode[0x81] = KEY_RECENT_APP;
+		atkbd->keycode[0x82] = KEY_RFKILL;
+		atkbd->keycode[0x83] = KEY_START_VOICE_COMMAND;	/* voice command */
+		atkbd->keycode[0x84] = KEY_START_SETTINGS;	/* setting(application) */
+		atkbd->keycode[0x85] = KEY_BRIGHTNESSDOWN;
+		atkbd->keycode[0x86] = KEY_BRIGHTNESSUP;
 	} else if (atkbd->set == 3) {
 		memcpy(atkbd->keycode, atkbd_set3_keycode, sizeof(atkbd->keycode));
 	} else {
@@ -1036,6 +1228,8 @@ static void atkbd_set_device_attrs(struct atkbd *atkbd)
 		snprintf(atkbd->name, sizeof(atkbd->name),
 			 "AT %s Set %d keyboard",
 			 atkbd->translated ? "Translated" : "Raw", atkbd->set);
+
+	snprintf(atkbd->name, sizeof(atkbd->name), "HP Keyboard");
 
 	snprintf(atkbd->phys, sizeof(atkbd->phys),
 		 "%s/input0", atkbd->ps2dev.serio->phys);
@@ -1127,6 +1321,9 @@ static int atkbd_connect(struct serio *serio, struct serio_driver *drv)
 			atkbd->write = true;
 		break;
 	}
+
+	INIT_WORK(&work_wake, send_wakeup_event);
+	create_event_pipe();
 
 	atkbd->softraw = atkbd_softraw;
 	atkbd->softrepeat = atkbd_softrepeat;
@@ -1750,6 +1947,7 @@ static const struct dmi_system_id atkbd_dmi_quirk_table[] __initconst = {
 
 static int __init atkbd_init(void)
 {
+	INIT_WORK(&otg_switch_work, otg_switch_callback_function);
 	dmi_check_system(atkbd_dmi_quirk_table);
 
 	return serio_register_driver(&atkbd_drv);
