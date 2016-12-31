@@ -820,7 +820,7 @@ static int gpio_keys_resume(struct device *dev)
 	struct platform_device *pdev = to_platform_device(dev);
 	struct gpio_keys_drvdata *ddata = dev_get_drvdata(dev);
 	struct gpio_keys_platform_data *pdata = pdev->dev.platform_data;
-	int wakeup_key = KEY_POWER;
+	int wakeup_key = KEY_RESERVED;
 	int i;
 	if (pdata->wakeup_key)
 		wakeup_key = pdata->wakeup_key();
@@ -829,9 +829,6 @@ static int gpio_keys_resume(struct device *dev)
 		struct gpio_button_data *bdata = &ddata->data[i];
 		if (bdata->button->wakeup && device_may_wakeup(dev)) {
 			disable_irq_wake(bdata->irq);
-
-			//if (wakeup_key == bdata->button->code)
-				//gpio_keys_gpio_report_wake(bdata);
 		}
 		if (gpio_is_valid(bdata->button->gpio))
 			gpio_keys_gpio_report_event(bdata);
