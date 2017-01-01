@@ -2,6 +2,7 @@
  * Gadget Driver for Android
  *
  * Copyright (C) 2008 Google, Inc.
+ * Copyright (c) 2012-2015, NVIDIA CORPORATION.  All rights reserved.
  * Author: Mike Lockwood <lockwood@android.com>
  *         Benoit Goby <benoit@android.com>
  *
@@ -42,6 +43,7 @@
 #include "epautoconf.c"
 #include "composite.c"
 
+#include "f_nvusb.c"
 #include "f_fs.c"
 #include "f_audio_source.c"
 #include "f_mass_storage.c"
@@ -161,9 +163,9 @@ static struct usb_configuration android_config_driver = {
 	.label		= "android",
 	.unbind		= android_unbind_config,
 	.bConfigurationValue = 1,
-	.bmAttributes	= USB_CONFIG_ATT_ONE | USB_CONFIG_ATT_SELFPOWER,
-	.bMaxPower	= 0xFA, /* 500ma */
 };
+
+extern bool suspend_with_otg_connected;
 
 static void android_work(struct work_struct *data)
 {
@@ -183,7 +185,7 @@ static void android_work(struct work_struct *data)
 	dev->sw_connected = dev->connected;
 	spin_unlock_irqrestore(&cdev->lock, flags);
 
-	if (uevent_envp) {
+	if (uevent_envp && !suspend_with_otg_connected) {
 		kobject_uevent_env(&dev->dev->kobj, KOBJ_CHANGE, uevent_envp);
 		pr_info("%s: sent uevent %s\n", __func__, uevent_envp[0]);
 	} else {
@@ -466,7 +468,7 @@ static void adb_closed_callback(void)
 }
 
 
-#define MAX_ACM_INSTANCES 4
+#define MAX_ACM_INSTANCES 2
 struct acm_function_config {
 	int instances;
 };
@@ -592,6 +594,13 @@ static int mtp_function_ctrlrequest(struct android_usb_function *f,
 	return mtp_ctrlrequest(cdev, c);
 }
 
+static int ptp_function_ctrlrequest(struct android_usb_function *f,
+						struct usb_composite_dev *cdev,
+						const struct usb_ctrlrequest *c)
+{
+	return mtp_ctrlrequest(cdev, c);
+}
+
 static struct android_usb_function mtp_function = {
 	.name		= "mtp",
 	.init		= mtp_function_init,
@@ -606,6 +615,7 @@ static struct android_usb_function ptp_function = {
 	.init		= ptp_function_init,
 	.cleanup	= ptp_function_cleanup,
 	.bind_config	= ptp_function_bind_config,
+	.ctrlrequest	= ptp_function_ctrlrequest,
 };
 
 
@@ -885,7 +895,6 @@ static struct android_usb_function mass_storage_function = {
 	.attributes	= mass_storage_function_attributes,
 };
 
-
 static int accessory_function_init(struct android_usb_function *f,
 					struct usb_composite_dev *cdev)
 {
@@ -980,6 +989,31 @@ static struct android_usb_function audio_source_function = {
 	.attributes	= audio_source_function_attributes,
 };
 
+static int
+nvusb_function_init(struct android_usb_function *f,
+		struct usb_composite_dev *cdev)
+{
+	return 0;
+}
+
+static void nvusb_function_cleanup(struct android_usb_function *f)
+{
+}
+
+static int
+nvusb_function_bind_config(struct android_usb_function *f,
+		struct usb_configuration *c)
+{
+	return nvusb_bind_config(c);
+}
+
+static struct android_usb_function nvusb_function = {
+	.name		= "nvusb",
+	.init		= nvusb_function_init,
+	.cleanup	= nvusb_function_cleanup,
+	.bind_config	= nvusb_function_bind_config,
+};
+
 static struct android_usb_function *supported_functions[] = {
 	&ffs_function,
 	&adb_function,
@@ -990,6 +1024,7 @@ static struct android_usb_function *supported_functions[] = {
 	&mass_storage_function,
 	&accessory_function,
 	&audio_source_function,
+	&nvusb_function,
 	NULL
 };
 
@@ -1408,7 +1443,6 @@ static int android_bind(struct usb_composite_dev *cdev)
 		device_desc.bcdDevice = __constant_cpu_to_le16(0x9999);
 	}
 
-	usb_gadget_set_selfpowered(gadget);
 	dev->cdev = cdev;
 
 	return 0;

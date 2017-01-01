@@ -62,5 +62,7 @@ ifeq ($(CONFIG_TRACING),y)
 obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
 endif
 obj-$(CONFIG_GPU_TRACEPOINTS) += gpu-traces.o
+obj-$(CONFIG_TRACELEVEL) += tracelevel.o
+obj-$(CONFIG_TRACEDUMP) += tracedump.o
 
 libftrace-y := ftrace.o

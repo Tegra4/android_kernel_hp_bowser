@@ -8,6 +8,7 @@
  * interface.
  *
  * Copyright (C) 2010 IBM Corperation
+ * Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
  *
  * Author: John Stultz <john.stultz@linaro.org>
  *
@@ -116,10 +117,6 @@ static void alarmtimer_rtc_interface_remove(void)
 	class_interface_unregister(&alarmtimer_rtc_interface);
 }
 #else
-struct rtc_device *alarmtimer_get_rtcdev(void)
-{
-	return NULL;
-}
 #define rtcdev (NULL)
 static inline int alarmtimer_rtc_interface_setup(void) { return 0; }
 static inline void alarmtimer_rtc_interface_remove(void) { }
@@ -255,6 +252,8 @@ static int alarmtimer_suspend(struct device *dev)
 
 	if (ktime_to_ns(min) < 2 * NSEC_PER_SEC) {
 		__pm_wakeup_event(ws, 2 * MSEC_PER_SEC);
+		dev_err(dev, "RTC waketime %lld less than 2 sec\n",
+			ktime_to_ns(min));
 		return -EBUSY;
 	}
 
@@ -266,12 +265,40 @@ static int alarmtimer_suspend(struct device *dev)
 
 	/* Set alarm, if in the past reject suspend briefly to handle */
 	ret = rtc_timer_start(rtc, &rtctimer, now, ktime_set(0, 0));
-	if (ret < 0)
+	if (ret < 0) {
+		dev_err(dev, "rtc_timer_start failed: %d\n", ret);
 		__pm_wakeup_event(ws, 1 * MSEC_PER_SEC);
+	}
 	return ret;
+}
+
+static void sync_to_rtc_time(struct device *dev)
+{
+	struct timespec ts_old;
+	struct rtc_time tm;
+
+	/* log old system time */
+	getnstimeofday(&ts_old);
+	rtc_time_to_tm(ts_old.tv_sec, &tm);
+	pr_info("alarmtimer: old system time %d-%02d-%02d %02d:%02d:%02d.%09lu UTC\n",
+		tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday,
+		tm.tm_hour, tm.tm_min, tm.tm_sec, ts_old.tv_nsec);
+
+#ifdef CONFIG_RTC_HCTOSYS
+	rtc_hctosys();
+#else
+	pr_info("%s %s line=%d, missing function to sync system time to rtc time\n",
+		__FILE__, __func__, __LINE__);
+#endif
+	return;
 }
 #else
 static int alarmtimer_suspend(struct device *dev)
+{
+	return 0;
+}
+
+static void sync_to_rtc_time(struct device *dev)
 {
 	return 0;
 }
@@ -767,6 +794,7 @@ out:
 /* Suspend hook structures */
 static const struct dev_pm_ops alarmtimer_pm_ops = {
 	.suspend = alarmtimer_suspend,
+	.complete = sync_to_rtc_time,
 };
 
 static struct platform_driver alarmtimer_driver = {

@@ -157,8 +157,6 @@ struct input_keymap_entry {
 #define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
 #define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
 
-#define EVIOCSCLOCKID		_IOW('E', 0xa0, int)			/* Set clockid to be used for timestamps */
-
 /*
  * Device properties and quirks
  */
@@ -845,6 +843,9 @@ struct input_keymap_entry {
 #define ABS_MT_TRACKING_ID	0x39	/* Unique ID of initiated contact */
 #define ABS_MT_PRESSURE		0x3a	/* Pressure on contact area */
 #define ABS_MT_DISTANCE		0x3b	/* Contact hover distance */
+#define ABS_MT_TOOL_X		0x3c	/* Center X tool position */
+#define ABS_MT_TOOL_Y		0x3d	/* Center Y tool position */
+
 
 #ifdef __KERNEL__
 /* Implementation details, userspace should not care about these */
@@ -888,6 +889,7 @@ struct input_keymap_entry {
 #define MSC_GESTURE		0x02
 #define MSC_RAW			0x03
 #define MSC_SCAN		0x04
+#define MSC_ACTIVITY    0x05
 #define MSC_MAX			0x07
 #define MSC_CNT			(MSC_MAX+1)
 
@@ -1284,6 +1286,7 @@ struct input_dev {
 	const char *name;
 	const char *phys;
 	const char *uniq;
+	bool enabled;
 	struct input_id id;
 
 	unsigned long propbit[BITS_TO_LONGS(INPUT_PROP_CNT)];
@@ -1333,6 +1336,8 @@ struct input_dev {
 	void (*close)(struct input_dev *dev);
 	int (*flush)(struct input_dev *dev, struct file *file);
 	int (*event)(struct input_dev *dev, unsigned int type, unsigned int code, int value);
+	int (*enable)(struct input_dev *dev);
+	int (*disable)(struct input_dev *dev);
 
 	struct input_handle __rcu *grab;
 

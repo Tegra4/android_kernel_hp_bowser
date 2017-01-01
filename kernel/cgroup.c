@@ -60,6 +60,7 @@
 #include <linux/eventfd.h>
 #include <linux/poll.h>
 #include <linux/flex_array.h> /* used in cgroup_attach_proc */
+#include <linux/capability.h>
 
 #include <linux/atomic.h>
 
@@ -385,16 +386,20 @@ static void free_css_set_work(struct work_struct *work)
 		struct cgroup *cgrp = link->cgrp;
 		list_del(&link->cg_link_list);
 		list_del(&link->cgrp_link_list);
+
+
 		/*
 		 * We may not be holding cgroup_mutex, and if cgrp->count is
 		 * dropped to 0 the cgroup can be destroyed at any time, hence
 		 * rcu_read_lock is used to keep it alive.
 		 */
 		rcu_read_lock();
-		if (atomic_dec_and_test(&cgrp->count)) {
+		if (atomic_dec_and_test(&cgrp->count) &&
+		    notify_on_release(cgrp)) {
 			check_for_release(cgrp);
 			cgroup_wakeup_rmdir_waiter(cgrp);
 		}
+
 		rcu_read_unlock();
 
 		kfree(link);
@@ -447,6 +452,12 @@ static void put_css_set(struct css_set *cg)
 	write_unlock(&css_set_lock);
 	call_rcu(&cg->rcu_head, free_css_set_rcu);
 }
+
+/* We don't maintain the lists running through each css_set to its
+ * task until after the first call to cgroup_iter_start(). This
+ * reduces the fork()/exit() overhead for people who have cgroups
+ * compiled into their kernel but not actually in use */
+static int use_task_css_set_links __read_mostly;
 
 /*
  * compare_css_sets - helper function for find_existing_css_set().
@@ -1926,6 +1937,15 @@ int cgroup_attach_task(struct cgroup *cgrp, struct task_struct *tsk)
 				failed_ss = ss;
 				goto out;
 			}
+		} else if (!capable(CAP_SYS_ADMIN)) {
+			const struct cred *cred = current_cred(), *tcred;
+
+			/* No can_attach() - check perms generically */
+			tcred = __task_cred(tsk);
+			if (cred->euid != tcred->uid &&
+			    cred->euid != tcred->suid) {
+				return -EACCES;
+			}
 		}
 	}
 
@@ -2208,7 +2228,8 @@ retry_find_task:
 			ret = cgroup_allow_attach(cgrp, &tset);
 			if (ret) {
 				rcu_read_unlock();
-				goto out_unlock_cgroup;
+				cgroup_unlock();
+				return ret;
 			}
 		}
 	} else

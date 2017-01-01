@@ -901,11 +901,27 @@ static int usbhid_get_raw_report(struct hid_device *hid,
 		unsigned char report_type)
 {
 	struct usbhid_device *usbhid = hid->driver_data;
-	struct usb_device *dev = hid_to_usb_dev(hid);
-	struct usb_interface *intf = usbhid->intf;
-	struct usb_host_interface *interface = intf->cur_altsetting;
+	struct usb_device *dev;
+	struct usb_interface *intf;
+	struct usb_host_interface *interface;
 	int skipped_report_id = 0;
 	int ret;
+
+	intf = usbhid->intf;
+	if (intf == NULL) {
+		pr_err("%s: no USB intf\n", __func__);
+		return -ESHUTDOWN;
+	}
+	spin_lock_irq(&usbhid->lock);
+	if (test_bit(HID_DISCONNECTED, &usbhid->iofl)) {
+		pr_err("hid device disconnected\n");
+		spin_unlock_irq(&usbhid->lock);
+		return -ESHUTDOWN;
+	}
+	spin_unlock_irq(&usbhid->lock);
+
+	dev = hid_to_usb_dev(hid);
+	interface = intf->cur_altsetting;
 
 	/* Byte 0 is the report number. Report data starts at byte 1.*/
 	buf[0] = report_number;
@@ -1233,6 +1249,18 @@ static int usbhid_power(struct hid_device *hid, int lvl)
 	return r;
 }
 
+static void usbhid_request(struct hid_device *hid, struct hid_report *rep, int reqtype)
+{
+	switch (reqtype) {
+	case HID_REQ_GET_REPORT:
+		usbhid_submit_report(hid, rep, USB_DIR_IN);
+		break;
+	case HID_REQ_SET_REPORT:
+		usbhid_submit_report(hid, rep, USB_DIR_OUT);
+		break;
+	}
+}
+
 static struct hid_ll_driver usb_hid_driver = {
 	.parse = usbhid_parse,
 	.start = usbhid_start,
@@ -1241,6 +1269,7 @@ static struct hid_ll_driver usb_hid_driver = {
 	.close = usbhid_close,
 	.power = usbhid_power,
 	.hidinput_input_event = usb_hidinput_input_event,
+	.request = usbhid_request,
 };
 
 static int usbhid_probe(struct usb_interface *intf, const struct usb_device_id *id)
@@ -1356,7 +1385,12 @@ static void usbhid_disconnect(struct usb_interface *intf)
 	if (WARN_ON(!hid))
 		return;
 
+	usb_set_intfdata(intf, NULL);
 	usbhid = hid->driver_data;
+	spin_lock_irq(&usbhid->lock);
+	set_bit(HID_DISCONNECTED, &usbhid->iofl);
+	spin_unlock_irq(&usbhid->lock);
+
 	hid_destroy_device(hid);
 	kfree(usbhid);
 }

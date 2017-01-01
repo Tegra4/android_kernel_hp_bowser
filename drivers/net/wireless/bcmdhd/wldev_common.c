@@ -1,14 +1,14 @@
 /*
  * Common function shared by Linux WEXT, cfg80211 and p2p drivers
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
+ * Copyright (C) 1999-2012, Broadcom Corporation
+ *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- * 
+ *
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -16,7 +16,7 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- * 
+ *
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
@@ -32,12 +32,12 @@
 #include <wldev_common.h>
 #include <bcmutils.h>
 
-#define htod32(i) (i)
-#define htod16(i) (i)
-#define dtoh32(i) (i)
-#define dtoh16(i) (i)
-#define htodchanspec(i) (i)
-#define dtohchanspec(i) (i)
+#define htod32(i) i
+#define htod16(i) i
+#define dtoh32(i) i
+#define dtoh16(i) i
+#define htodchanspec(i) i
+#define dtohchanspec(i) i
 
 #define	WLDEV_ERROR(args)						\
 	do {										\
@@ -109,7 +109,6 @@ s32 wldev_iovar_setbuf(
 		ret = wldev_ioctl(dev, WLC_SET_VAR, buf, iovar_len, TRUE);
 	else
 		ret = BCME_BUFTOOSHORT;
-
 	if (buf_sync)
 		mutex_unlock(buf_sync);
 	return ret;
@@ -335,6 +334,102 @@ int wldev_set_band(
 	return error;
 }
 
+/* tuning performance for miracast */
+int wldev_miracast_tuning(
+	struct net_device *dev, char *command, int total_len)
+{
+	int error = 0;
+	int mode = 0;
+	int ampdu_mpdu;
+	int roam_off;
+#ifdef VSDB_BW_ALLOCATE_ENABLE
+	int mchan_algo;
+	int mchan_bw;
+#endif /* VSDB_BW_ALLOCATE_ENABLE */
+
+	if (sscanf(command, "%*s %d", &mode) != 1) {
+		WLDEV_ERROR(("Failed to get mode\n"));
+		return -1;
+	}
+
+	WLDEV_ERROR(("mode: %d\n", mode));
+
+	if (mode == 0) {
+		/* Normal mode: restore everything to default */
+		ampdu_mpdu = -1;
+#if defined(ROAM_ENABLE)
+		roam_off = 0;	/* roam enable */
+#elif defined(DISABLE_BUILTIN_ROAM)
+		roam_off = 1;	/* roam disable */
+#endif
+#ifdef VSDB_BW_ALLOCATE_ENABLE
+		mchan_algo = 0;	/* Default */
+		mchan_bw = 50;	/* 50:50 */
+#endif /* VSDB_BW_ALLOCATE_ENABLE */
+	}
+	else if (mode == 1) {
+		/* Miracast source mode */
+		ampdu_mpdu = 8;
+#if defined(ROAM_ENABLE) || defined(DISABLE_BUILTIN_ROAM)
+		roam_off = 1; /* roam disable */
+#endif
+#ifdef VSDB_BW_ALLOCATE_ENABLE
+		mchan_algo = 1;	/* BW based */
+		mchan_bw = 25;	/* 25:75 */
+#endif /* VSDB_BW_ALLOCATE_ENABLE */
+	}
+	else if (mode == 2) {
+		/* Miracast sink/PC Gaming mode */
+		ampdu_mpdu = 8;
+#if defined(ROAM_ENABLE) || defined(DISABLE_BUILTIN_ROAM)
+		roam_off = 1; /* roam disable */
+#endif
+#ifdef VSDB_BW_ALLOCATE_ENABLE
+		mchan_algo = 0;	/* Default */
+		mchan_bw = 50;	/* 50:50 */
+#endif /* VSDB_BW_ALLOCATE_ENABLE */
+	}
+	else {
+		WLDEV_ERROR(("Unknown mode: %d\n", mode));
+		return -1;
+	}
+
+	/* Update ampdu_mpdu */
+	error = wldev_iovar_setint(dev, "ampdu_mpdu", ampdu_mpdu);
+	if (error) {
+		WLDEV_ERROR(("Failed to set ampdu_mpdu: mode:%d, error:%d\n",
+			mode, error));
+		return -1;
+	}
+
+#if defined(ROAM_ENABLE) || defined(DISABLE_BUILTIN_ROAM)
+	error = wldev_iovar_setint(dev, "roam_off", roam_off);
+	if (error) {
+		WLDEV_ERROR(("Failed to set roam_off: mode:%d, error:%d\n",
+			mode, error));
+		return -1;
+	}
+#endif /* ROAM_ENABLE || DISABLE_BUILTIN_ROAM */
+
+#ifdef VSDB_BW_ALLOCATE_ENABLE
+	error = wldev_iovar_setint(dev, "mchan_algo", mchan_algo);
+	if (error) {
+		WLDEV_ERROR(("Failed to set mchan_algo: mode:%d, error:%d\n",
+			mode, error));
+		return -1;
+	}
+
+	error = wldev_iovar_setint(dev, "mchan_bw", mchan_bw);
+	if (error) {
+		WLDEV_ERROR(("Failed to set mchan_bw: mode:%d, error:%d\n",
+			mode, error));
+		return -1;
+	}
+#endif /* VSDB_BW_ALLOCATE_ENABLE */
+
+	return error;
+}
+
 int wldev_set_country(
 	struct net_device *dev, char *country_code, bool notify, bool user_enforced)
 {
@@ -354,7 +449,7 @@ int wldev_set_country(
 	}
 
 	if ((error < 0) ||
-	    (strncmp(country_code, cspec.country_abbrev, WLC_CNTRY_BUF_SZ) != 0)) {
+	    (strncmp(country_code, cspec.ccode, WLC_CNTRY_BUF_SZ) != 0)) {
 
 		if (user_enforced) {
 			bzero(&scbval, sizeof(scb_val_t));
