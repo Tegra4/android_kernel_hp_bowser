@@ -208,7 +208,7 @@ static int hidinput_setkeycode(struct input_dev *dev,
  * Only exponent 1 length units are processed. Centimeters and inches are
  * converted to millimeters. Degrees are converted to radians.
  */
-static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
+__s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
 {
 	__s32 unit_exponent = field->unit_exponent;
 	__s32 logical_extents = field->logical_maximum -
@@ -225,7 +225,10 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
 	 * Verify and convert units.
 	 * See HID specification v1.11 6.2.2.7 Global Items for unit decoding
 	 */
-	if (code == ABS_X || code == ABS_Y || code == ABS_Z) {
+	switch (code) {
+	case ABS_X:
+	case ABS_Y:
+	case ABS_Z:
 		if (field->unit == 0x11) {		/* If centimeters */
 			/* Convert to millimeters */
 			unit_exponent += 1;
@@ -239,7 +242,13 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
 		} else {
 			return 0;
 		}
-	} else if (code == ABS_RX || code == ABS_RY || code == ABS_RZ) {
+		break;
+
+	case ABS_RX:
+	case ABS_RY:
+	case ABS_RZ:
+	case ABS_TILT_X:
+	case ABS_TILT_Y:
 		if (field->unit == 0x14) {		/* If degrees */
 			/* Convert to radians */
 			prev = logical_extents;
@@ -250,7 +259,9 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
 		} else if (field->unit != 0x12) {	/* If not radians */
 			return 0;
 		}
-	} else {
+		break;
+
+	default:
 		return 0;
 	}
 
@@ -272,6 +283,7 @@ static __s32 hidinput_calc_abs_res(const struct hid_field *field, __u16 code)
 	/* Calculate resolution */
 	return logical_extents / physical_extents;
 }
+EXPORT_SYMBOL_GPL(hidinput_calc_abs_res);
 
 #ifdef CONFIG_HID_BATTERY_STRENGTH
 static enum power_supply_property hidinput_battery_props[] = {
@@ -632,6 +644,14 @@ static void hidinput_configure_usage(struct hid_input *hidinput, struct hid_fiel
 
 		case 0x3c: /* Invert */
 			map_key_clear(BTN_TOOL_RUBBER);
+			break;
+
+		case 0x3d: /* X Tilt */
+			map_abs_clear(ABS_TILT_X);
+			break;
+
+		case 0x3e: /* Y Tilt */
+			map_abs_clear(ABS_TILT_Y);
 			break;
 
 		case 0x33: /* Touch */

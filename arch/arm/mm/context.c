@@ -18,9 +18,12 @@
 
 static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
 unsigned int cpu_last_asid = ASID_FIRST_VERSION;
+#ifdef CONFIG_SMP
+DEFINE_PER_CPU(struct mm_struct *, current_mm);
+#endif
 
 #ifdef CONFIG_ARM_LPAE
-void cpu_set_reserved_ttbr0(void)
+static void cpu_set_reserved_ttbr0(void)
 {
 	unsigned long ttbl = __pa(swapper_pg_dir);
 	unsigned long ttbh = 0;
@@ -36,7 +39,7 @@ void cpu_set_reserved_ttbr0(void)
 	isb();
 }
 #else
-void cpu_set_reserved_ttbr0(void)
+static void cpu_set_reserved_ttbr0(void)
 {
 	u32 ttb;
 	/* Copy TTBR1 into TTBR0 */
@@ -62,6 +65,7 @@ static void flush_context(void)
 {
 	cpu_set_reserved_ttbr0();
 	local_flush_tlb_all();
+	dummy_flush_tlb_a15_erratum();
 	if (icache_is_vivt_asid_tagged()) {
 		__flush_icache_all();
 		dsb();
@@ -105,7 +109,14 @@ static void reset_context(void *info)
 {
 	unsigned int asid;
 	unsigned int cpu = smp_processor_id();
-	struct mm_struct *mm = current->active_mm;
+	struct mm_struct *mm = per_cpu(current_mm, cpu);
+
+	/*
+	 * Check if a current_mm was set on this CPU as it might still
+	 * be in the early booting stages and using the reserved ASID.
+	 */
+	if (!mm)
+		return;
 
 	smp_rmb();
 	asid = cpu_last_asid + cpu + 1;

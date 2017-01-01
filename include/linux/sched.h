@@ -1,3 +1,7 @@
+/*
+ *  Copyright (c) 2013, NVIDIA CORPORATION.  All rights reserved.
+ */
+
 #ifndef _LINUX_SCHED_H
 #define _LINUX_SCHED_H
 
@@ -139,6 +143,7 @@ extern int nr_processes(void);
 extern unsigned long nr_running(void);
 extern unsigned long nr_uninterruptible(void);
 extern unsigned long nr_iowait(void);
+extern u64 nr_running_integral(unsigned int cpu);
 extern unsigned long nr_iowait_cpu(int cpu);
 extern unsigned long this_cpu_load(void);
 
@@ -1682,6 +1687,15 @@ static inline struct pid *task_pgrp(struct task_struct *task)
 static inline struct pid *task_session(struct task_struct *task)
 {
 	return task->group_leader->pids[PIDTYPE_SID].pid;
+}
+
+static inline struct task_struct *get_thread_process(struct task_struct *thread)
+{
+	struct task_struct *task = thread;
+	while (task->pid != task->tgid) {
+		task = task->group_leader;
+	}
+	return task;
 }
 
 struct pid_namespace;

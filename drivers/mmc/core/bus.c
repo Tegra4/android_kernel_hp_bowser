@@ -27,6 +27,10 @@
 
 #define to_mmc_driver(d)	container_of(d, struct mmc_driver, drv)
 
+#ifdef CONFIG_MMC_TEST
+static struct mmc_driver *mmc_test_drv;
+#endif
+
 static ssize_t mmc_type_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
@@ -109,6 +113,13 @@ static int mmc_bus_probe(struct device *dev)
 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
 	struct mmc_card *card = mmc_dev_to_card(dev);
 
+#ifdef CONFIG_MMC_TEST
+	/*
+	 * Hack: Explicitly invoking mmc_test probe to co-exist with mmcblk driver.
+	 */
+	mmc_test_drv->probe(card);
+#endif
+
 	return drv->probe(card);
 }
 
@@ -122,7 +133,16 @@ static int mmc_bus_remove(struct device *dev)
 	return 0;
 }
 
-static int mmc_bus_suspend(struct device *dev)
+static void mmc_bus_shutdown(struct device *dev)
+{
+	struct mmc_driver *drv = to_mmc_driver(dev->driver);
+	struct mmc_card *card = mmc_dev_to_card(dev);
+
+	if (dev->driver && drv->shutdown)
+		drv->shutdown(card);
+}
+
+static int mmc_bus_suspend(struct device *dev, pm_message_t state)
 {
 	struct mmc_driver *drv = to_mmc_driver(dev->driver);
 	struct mmc_card *card = mmc_dev_to_card(dev);
@@ -145,7 +165,6 @@ static int mmc_bus_resume(struct device *dev)
 }
 
 #ifdef CONFIG_PM_RUNTIME
-
 static int mmc_runtime_suspend(struct device *dev)
 {
 	struct mmc_card *card = mmc_dev_to_card(dev);
@@ -164,8 +183,7 @@ static int mmc_runtime_idle(struct device *dev)
 {
 	return pm_runtime_suspend(dev);
 }
-
-#endif /* !CONFIG_PM_RUNTIME */
+#endif /* CONFIG_PM_RUNTIME */
 
 static const struct dev_pm_ops mmc_bus_pm_ops = {
 	SET_RUNTIME_PM_OPS(mmc_runtime_suspend, mmc_runtime_resume,
@@ -180,6 +198,7 @@ static struct bus_type mmc_bus_type = {
 	.uevent		= mmc_bus_uevent,
 	.probe		= mmc_bus_probe,
 	.remove		= mmc_bus_remove,
+	.shutdown	= mmc_bus_shutdown,
 	.pm		= &mmc_bus_pm_ops,
 };
 
@@ -200,6 +219,10 @@ void mmc_unregister_bus(void)
 int mmc_register_driver(struct mmc_driver *drv)
 {
 	drv->drv.bus = &mmc_bus_type;
+#ifdef CONFIG_MMC_TEST
+	if (!strcmp(drv->drv.name, "mmc_test"))
+		mmc_test_drv = drv;
+#endif
 	return driver_register(&drv->drv);
 }
 
@@ -310,7 +333,7 @@ int mmc_add_card(struct mmc_card *card)
 	} else {
 		pr_info("%s: new %s%s%s%s%s card at address %04x\n",
 			mmc_hostname(card->host),
-			mmc_card_uhs(card) ? "ultra high speed " :
+			mmc_sd_card_uhs(card) ? "ultra high speed " :
 			(mmc_card_highspeed(card) ? "high speed " : ""),
 			(mmc_card_hs200(card) ? "HS200 " : ""),
 			mmc_card_ddr_mode(card) ? "DDR " : "",

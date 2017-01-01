@@ -35,7 +35,6 @@
  *     indeed an AC3 stream packed in SPDIF frames (i.e. no real AC3 stream).
  */
 
-
 #include <linux/bitops.h>
 #include <linux/init.h>
 #include <linux/list.h>
@@ -48,6 +47,9 @@
 #include <linux/usb/audio.h>
 #include <linux/usb/audio-v2.h>
 #include <linux/module.h>
+#ifdef CONFIG_SWITCH
+#include <linux/switch.h>
+#endif
 
 #include <sound/control.h>
 #include <sound/core.h>
@@ -86,6 +88,7 @@ static int nrpacks = 8;		/* max. number of packets per urb */
 static bool async_unlink = 1;
 static int device_setup[SNDRV_CARDS]; /* device parameter for this card */
 static bool ignore_ctl_error;
+static int usb_nonswitch_match(struct usb_device* udev);
 
 module_param_array(index, int, NULL, 0444);
 MODULE_PARM_DESC(index, "Index value for the USB audio adapter.");
@@ -115,6 +118,18 @@ MODULE_PARM_DESC(ignore_ctl_error,
 static DEFINE_MUTEX(register_mutex);
 static struct snd_usb_audio *usb_chip[SNDRV_CARDS];
 static struct usb_driver usb_audio_driver;
+
+#ifdef CONFIG_SWITCH
+enum switch_state {
+	STATE_CONNECTED_UNKNOWN = -1,
+	STATE_DISCONNECTED = 0,
+	STATE_CONNECTED = 1
+};
+
+static struct switch_dev usb_switch_dev = {
+	.name = "usb_audio",
+};
+#endif
 
 /*
  * disconnect streams
@@ -542,10 +557,16 @@ snd_usb_audio_probe(struct usb_device *dev,
 		goto __error;
 	}
 
+#ifdef CONFIG_SWITCH
+	if (!usb_nonswitch_match(dev))
+		switch_set_state(&usb_switch_dev, STATE_CONNECTED);
+#endif
+
 	usb_chip[chip->index] = chip;
 	chip->num_interfaces++;
 	chip->probing = 0;
 	mutex_unlock(&register_mutex);
+
 	return chip;
 
  __error:
@@ -556,6 +577,7 @@ snd_usb_audio_probe(struct usb_device *dev,
 	}
 	mutex_unlock(&register_mutex);
  __err_val:
+
 	return NULL;
 }
 
@@ -579,6 +601,12 @@ static void snd_usb_audio_disconnect(struct usb_device *dev,
 
 	mutex_lock(&register_mutex);
 	chip->num_interfaces--;
+
+#ifdef CONFIG_SWITCH
+	if (!usb_nonswitch_match(dev))
+		switch_set_state(&usb_switch_dev, STATE_DISCONNECTED);
+#endif
+
 	if (chip->num_interfaces <= 0) {
 		snd_card_disconnect(card);
 		/* release the pcm resources */
@@ -721,6 +749,23 @@ static struct usb_device_id usb_audio_ids [] = {
 
 MODULE_DEVICE_TABLE (usb, usb_audio_ids);
 
+#ifdef CONFIG_SWITCH
+static struct usb_device_id usb_nonswitch_ids [] = {
+#include "nonswitch-table.h"
+    { }
+};
+
+static int usb_nonswitch_match(struct usb_device* udev) {
+	int i;
+	for(i = 0; i < sizeof(usb_nonswitch_ids); i++) {
+		if ((usb_nonswitch_ids[i].idVendor == udev->descriptor.idVendor) &&
+				(usb_nonswitch_ids[i].idProduct == udev->descriptor.idProduct))
+			return 1;
+	}
+	return 0;
+}
+#endif
+
 /*
  * entry point for linux usb interface
  */
@@ -737,15 +782,37 @@ static struct usb_driver usb_audio_driver = {
 
 static int __init snd_usb_audio_init(void)
 {
+	int err = 0;
+
 	if (nrpacks < 1 || nrpacks > MAX_PACKS) {
 		printk(KERN_WARNING "invalid nrpacks value.\n");
 		return -EINVAL;
 	}
-	return usb_register(&usb_audio_driver);
+
+#ifdef CONFIG_SWITCH
+	/* Add usb_audio swith class support */
+	err = switch_dev_register(&usb_switch_dev);
+	if (err < 0){
+		printk(KERN_ERR "failed to register switch device");
+		return -EINVAL;
+	}
+#endif
+
+	err = usb_register(&usb_audio_driver);
+	if (err) {
+#ifdef CONFIG_SWITCH
+		switch_dev_unregister(&usb_switch_dev);
+#endif
+	}
+
+	return err;
 }
 
 static void __exit snd_usb_audio_cleanup(void)
 {
+#ifdef CONFIG_SWITCH
+	switch_dev_unregister(&usb_switch_dev);
+#endif
 	usb_deregister(&usb_audio_driver);
 }
 
