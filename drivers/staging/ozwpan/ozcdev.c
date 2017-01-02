@@ -254,6 +254,9 @@ ssize_t oz_cdev_write(struct file *filp, const char __user *buf, size_t count,
 	oz_trace_msg(O, "WRITE I %08X %04X\n",
 		(unsigned int)((uintptr_t)filp), (int)count);
 
+	if (count > sizeof(ei->data) - sizeof(*elt) - sizeof(*app_hdr))
+		return -EINVAL;
+
 	spin_lock_bh(&g_cdev.lock);
 	pd = g_cdev.active_pd;
 	if (pd)
