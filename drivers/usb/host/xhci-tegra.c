@@ -912,20 +912,6 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 			"hvdd_usb3: regulator enable failed:%d\n", err);
 		goto err_null_regulator;
 	}
-#ifndef CONFIG_MACH_BOWSER
-	tegra->xusb_vbus_reg = devm_regulator_get(&pdev->dev, "usb_vbus");
-	if (IS_ERR(tegra->xusb_vbus_reg)) {
-		dev_err(&pdev->dev, "vbus regulator not found: %ld."
-			, PTR_ERR(tegra->xusb_vbus_reg));
-		err = PTR_ERR(tegra->xusb_vbus_reg);
-		goto err_put_hvdd_usb3;
-	}
-	err = regulator_enable(tegra->xusb_vbus_reg);
-	if (err < 0) {
-		dev_err(&pdev->dev, "vbus: regulator enable failed:%d\n", err);
-		goto err_put_hvdd_usb3;
-	}
-#endif
 
 	tegra->xusb_avdd_usb3_pll_reg =
 		devm_regulator_get(&pdev->dev, "avdd_usb_pll");
@@ -933,21 +919,13 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 		dev_dbg(&pdev->dev, "regulator not found: %ld."
 			, PTR_ERR(tegra->xusb_avdd_usb3_pll_reg));
 		err = PTR_ERR(tegra->xusb_avdd_usb3_pll_reg);
-#ifndef CONFIG_MACH_BOWSER
-		goto err_put_vbus;
-#else
 		goto err_put_hvdd_usb3;
-#endif
 	}
 	err = regulator_enable(tegra->xusb_avdd_usb3_pll_reg);
 	if (err < 0) {
 		dev_err(&pdev->dev,
 			"avdd_usb3_pll: regulator enable failed:%d\n", err);
-#ifndef CONFIG_MACH_BOWSER
-		goto err_put_vbus;
-#else
 		goto err_put_hvdd_usb3;
-#endif
 	}
 
 	tegra->xusb_avddio_usb3_reg =
@@ -969,16 +947,9 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 
 err_put_usb3_pll:
 	regulator_disable(tegra->xusb_avdd_usb3_pll_reg);
-#ifndef CONFIG_MACH_BOWSER
-err_put_vbus:
-	regulator_disable(tegra->xusb_vbus_reg);
-#endif
 err_put_hvdd_usb3:
 	regulator_disable(tegra->xusb_hvdd_usb3_reg);
 err_null_regulator:
-#ifndef CONFIG_MACH_BOWSER
-	tegra->xusb_vbus_reg = NULL;
-#endif
 	tegra->xusb_avddio_usb3_reg = NULL;
 	tegra->xusb_hvdd_usb3_reg = NULL;
 	tegra->xusb_avdd_usb3_pll_reg = NULL;
@@ -989,16 +960,10 @@ static void tegra_xusb_regulator_deinit(struct tegra_xhci_hcd *tegra)
 {
 	regulator_disable(tegra->xusb_avddio_usb3_reg);
 	regulator_disable(tegra->xusb_avdd_usb3_pll_reg);
-#ifndef CONFIG_MACH_BOWSER
-	regulator_disable(tegra->xusb_vbus_reg);
-#endif
 	regulator_disable(tegra->xusb_hvdd_usb3_reg);
 
 	tegra->xusb_avddio_usb3_reg = NULL;
 	tegra->xusb_avdd_usb3_pll_reg = NULL;
-#ifndef CONFIG_MACH_BOWSER
-	tegra->xusb_vbus_reg = NULL;
-#endif
 	tegra->xusb_hvdd_usb3_reg = NULL;
 }
 

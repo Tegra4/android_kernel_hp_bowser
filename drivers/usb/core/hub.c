@@ -38,6 +38,9 @@
 #endif
 #endif
 
+#define HUAWEI_VENDOR_ID           0x12D1
+#define HP_VENDOR_ID               0x03F0
+
 struct usb_hub {
 	struct device		*intfdev;	/* the "interface" device */
 	struct usb_device	*hdev;
@@ -2037,6 +2040,12 @@ int usb_new_device(struct usb_device *udev)
 	pm_runtime_get_noresume(&udev->dev);
 	pm_runtime_use_autosuspend(&udev->dev);
 	pm_runtime_enable(&udev->dev);
+
+        /* Extend autosuspend delay time to 8 seconds */
+        if(udev->descriptor.idVendor == HUAWEI_VENDOR_ID ||
+                udev->descriptor.idVendor == HP_VENDOR_ID){
+            pm_runtime_set_autosuspend_delay(&udev->dev, 32000);
+        }
 
 	/* By default, forbid autosuspend for all devices.  It will be
 	 * allowed for hubs during binding.
