@@ -6670,11 +6670,7 @@ static struct clk tegra_clk_emc = {
 	.ops = &tegra_emc_clk_ops,
 	.reg = 0x19c,
 	.max_rate = 1066000000,
-#ifndef CONFIG_MACH_BOWSER
 	.min_rate = 12750000,
-#else
-	.min_rate = 204000000,
-#endif
 	.inputs = mux_pllm_pllc_pllp_clkm,
 	.flags = MUX | MUX8 | DIV_U71 | PERIPH_EMC_ENB,
 	.u.periph = {

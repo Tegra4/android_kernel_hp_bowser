@@ -55,7 +55,6 @@ int  tegra_emc_iso_usage_debugfs_init(struct dentry *emc_debugfs_root);
 unsigned long tegra_emc_apply_efficiency(unsigned long total_bw,
 	unsigned long iso_bw, unsigned long max_rate, u32 usage_flags);
 void tegra_emc_dram_type_init(struct clk *c);
-void tegra_emc_set_min_rate(unsigned long rate);
 int tegra_emc_get_dram_type(void);
 int tegra_emc_get_dram_temperature(void);
 int tegra_emc_set_over_temp_state(unsigned long state);

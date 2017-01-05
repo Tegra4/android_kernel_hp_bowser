@@ -365,8 +365,6 @@ static u32 dram_type = -1;
 
 static struct clk *emc;
 
-struct mutex emc_rate_mutex;
-
 static struct {
 	cputime64_t time_at_clock[TEGRA_EMC_TABLE_MAX_SIZE];
 	int last_sel;
@@ -1530,43 +1528,10 @@ static int init_emc_table(const struct tegra11_emc_table *table, int table_size)
 	return 0;
 }
 
-static ssize_t show_emc_rate_min(struct device *dev, struct device_attribute *attr,
-				char *buf)
-{
-	if (emc) {
-		mutex_lock(&emc_rate_mutex);
-		sprintf(buf, "%ld\n", emc->min_rate);
-		mutex_unlock(&emc_rate_mutex);
-	} else {
-		*buf = '0';
-		strcat(buf, "\n");
-	}
-	return strlen(buf);
-}
-
-static ssize_t store_emc_rate_min(struct device *dev, struct device_attribute *attr,
-				const char *buf, size_t count)
-{
-	unsigned long rate;
-
-	if (sscanf(buf, "%ld", &rate) != 1)
-		return -EINVAL;
-	if (emc) {
-		mutex_lock(&emc_rate_mutex);
-        emc->min_rate = rate;
-		mutex_unlock(&emc_rate_mutex);
-	}
-
-	return 0;
-}
-
-static DEVICE_ATTR(emc_rate_min, 0666, show_emc_rate_min, store_emc_rate_min);
-
 static int __devinit tegra11_emc_probe(struct platform_device *pdev)
 {
 	struct tegra11_emc_pdata *pdata;
 	struct resource *res;
-	int err;
 
 	if (tegra_emc_table)
 		return -EINVAL;
@@ -1586,11 +1551,6 @@ static int __devinit tegra11_emc_probe(struct platform_device *pdev)
 		dev_err(&pdev->dev, "missing platform data\n");
 		return -ENODATA;
 	}
-
-	mutex_init(&emc_rate_mutex);
-	err = device_create_file(&pdev->dev, &dev_attr_emc_rate_min);
-	if (err)
-		dev_warn(&pdev->dev, "Can't register sysfs attribute\n");
 
 	return init_emc_table(pdata->tables, pdata->num_tables);
 }
@@ -1645,15 +1605,6 @@ void tegra_emc_dram_type_init(struct clk *c)
 		     EMC_CFG5_TYPE_MASK) >> EMC_CFG5_TYPE_SHIFT;
 
 	dram_dev_num = (mc_readl(MC_EMEM_ADR_CFG) & 0x1) + 1; /* 2 dev max */
-}
-
-void tegra_emc_set_min_rate(unsigned long rate)
-{
-    if (emc) {
-		mutex_lock(&emc_rate_mutex);
-        emc->min_rate = rate;
-		mutex_unlock(&emc_rate_mutex);
-	}
 }
 
 int tegra_emc_get_dram_type(void)
