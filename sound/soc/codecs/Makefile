@@ -104,6 +104,7 @@ snd-soc-rt5640-objs := rt5640.o
 # Amp
 snd-soc-max9877-objs := max9877.o
 snd-soc-tpa6130a2-objs := tpa6130a2.o
+snd-soc-bowser-tpa6130a2-objs := bowser-tpa6130a2.o
 
 obj-$(CONFIG_SND_SOC_88PM860X)	+= snd-soc-88pm860x.o
 obj-$(CONFIG_SND_SOC_AC97_CODEC)	+= snd-soc-ac97.o
@@ -210,4 +211,8 @@ obj-$(CONFIG_SND_SOC_RT5640)	+= snd-soc-rt5640.o
 
 # Amp
 obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
+ifndef CONFIG_MACH_BOWSER
 obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-tpa6130a2.o
+else
+obj-$(CONFIG_SND_SOC_TPA6130A2)	+= snd-soc-bowser-tpa6130a2.o
+endif
