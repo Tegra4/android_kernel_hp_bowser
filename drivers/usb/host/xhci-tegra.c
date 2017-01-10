@@ -907,7 +907,7 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 			"hvdd_usb3: regulator enable failed:%d\n", err);
 		goto err_null_regulator;
 	}
-
+#ifndef CONFIG_MACH_BOWSER
 	tegra->xusb_vbus_reg = devm_regulator_get(&pdev->dev, "usb_vbus");
 	if (IS_ERR(tegra->xusb_vbus_reg)) {
 		dev_err(&pdev->dev, "vbus regulator not found: %ld."
@@ -920,6 +920,7 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 		dev_err(&pdev->dev, "vbus: regulator enable failed:%d\n", err);
 		goto err_put_hvdd_usb3;
 	}
+#endif
 
 	tegra->xusb_avdd_usb3_pll_reg =
 		devm_regulator_get(&pdev->dev, "avdd_usb_pll");
@@ -927,13 +928,21 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 		dev_dbg(&pdev->dev, "regulator not found: %ld."
 			, PTR_ERR(tegra->xusb_avdd_usb3_pll_reg));
 		err = PTR_ERR(tegra->xusb_avdd_usb3_pll_reg);
+#ifndef CONFIG_MACH_BOWSER
 		goto err_put_vbus;
+#else
+		goto err_put_hvdd_usb3;
+#endif
 	}
 	err = regulator_enable(tegra->xusb_avdd_usb3_pll_reg);
 	if (err < 0) {
 		dev_err(&pdev->dev,
 			"avdd_usb3_pll: regulator enable failed:%d\n", err);
+#ifndef CONFIG_MACH_BOWSER
 		goto err_put_vbus;
+#else
+		goto err_put_hvdd_usb3;
+#endif
 	}
 
 	tegra->xusb_avddio_usb3_reg =
@@ -955,12 +964,16 @@ static int tegra_xusb_regulator_init(struct tegra_xhci_hcd *tegra,
 
 err_put_usb3_pll:
 	regulator_disable(tegra->xusb_avdd_usb3_pll_reg);
+#ifndef CONFIG_MACH_BOWSER
 err_put_vbus:
 	regulator_disable(tegra->xusb_vbus_reg);
+#endif
 err_put_hvdd_usb3:
 	regulator_disable(tegra->xusb_hvdd_usb3_reg);
 err_null_regulator:
+#ifndef CONFIG_MACH_BOWSER
 	tegra->xusb_vbus_reg = NULL;
+#endif
 	tegra->xusb_avddio_usb3_reg = NULL;
 	tegra->xusb_hvdd_usb3_reg = NULL;
 	tegra->xusb_avdd_usb3_pll_reg = NULL;
@@ -971,12 +984,16 @@ static void tegra_xusb_regulator_deinit(struct tegra_xhci_hcd *tegra)
 {
 	regulator_disable(tegra->xusb_avddio_usb3_reg);
 	regulator_disable(tegra->xusb_avdd_usb3_pll_reg);
+#ifndef CONFIG_MACH_BOWSER
 	regulator_disable(tegra->xusb_vbus_reg);
+#endif
 	regulator_disable(tegra->xusb_hvdd_usb3_reg);
 
 	tegra->xusb_avddio_usb3_reg = NULL;
 	tegra->xusb_avdd_usb3_pll_reg = NULL;
+#ifndef CONFIG_MACH_BOWSER
 	tegra->xusb_vbus_reg = NULL;
+#endif
 	tegra->xusb_hvdd_usb3_reg = NULL;
 }
 
@@ -2135,6 +2152,7 @@ static int tegra_xhci_ss_partition_elpg_exit(struct tegra_xhci_hcd *tegra)
 	} else {
 		xhci_info(xhci, "%s: ss already power gated\n",
 			__func__);
+		ret = -1;
 		return ret;
 	}
 
@@ -2407,7 +2425,10 @@ tegra_xhci_host_partition_elpg_exit(struct tegra_xhci_hcd *tegra)
 	 * will be done in xhci_resume().Do it here.
 	 */
 
-	tegra_xhci_ss_partition_elpg_exit(tegra);
+	ret = tegra_xhci_ss_partition_elpg_exit(tegra);
+	if (ret) {
+		goto out;
+	}
 
 	/* Change SS clock source to HSIC_480 and set ss_src_clk at 120MHz */
 	if (clk_get_rate(tegra->ss_src_clk) == 12000000) {
@@ -3416,6 +3437,9 @@ static int tegra_xhci_probe(struct platform_device *pdev)
 		goto err_put_usb3_hcd;
 	}
 
+	utmi_phy_pad_enable();
+	utmi_phy_iddq_override(false);
+
 	device_init_wakeup(&hcd->self.root_hub->dev, 1);
 	device_init_wakeup(&xhci->shared_hcd->self.root_hub->dev, 1);
 	spin_lock_init(&tegra->lock);
@@ -3476,8 +3500,6 @@ static int tegra_xhci_probe(struct platform_device *pdev)
 	tegra_usb_pmc_reg_write(PMC_UTMIP_UHSIC_SLEEP_CFG_0, pmc_reg);
 
 	tegra_xhci_debug_read_pads(tegra);
-	utmi_phy_pad_enable();
-	utmi_phy_iddq_override(false);
 	pmc_init(tegra);
 	pmc_data.pmc_ops->powerup_pmc_wake_detect(&pmc_data);
 
