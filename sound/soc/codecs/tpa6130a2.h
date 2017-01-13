@@ -59,6 +59,8 @@
 
 extern int tpa6130a2_add_controls(struct snd_soc_codec *codec);
 extern int tpa6130a2_stereo_enable(struct snd_soc_codec *codec, int enable);
+#ifndef CONFIG_MACH_BOWSER
 extern int tpa6130a2_power(u8 power);
+#endif
 
 #endif /* __TPA6130A2_H__ */
