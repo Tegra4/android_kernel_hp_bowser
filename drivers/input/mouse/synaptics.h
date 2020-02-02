@@ -76,6 +76,8 @@
  *					for noise.
  * 2	0x08	image sensor		image sensor tracks 5 fingers, but only
  *					reports 2.
+ * 2	0x01	uniform clickpad	whole clickpad moves instead of being
+ *					hinged at the top.
  * 2	0x20	report min		query 0x0f gives min coord reported
  * 2	0x80	forcepad		forcepad is a variant of clickpad that
  *					does not have physical buttons but rather
