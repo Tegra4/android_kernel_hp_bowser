@@ -34,6 +34,7 @@
 #include <linux/console.h>
 
 #include <asm/cacheflush.h>
+#include <asm/idmap.h>
 #include <asm/processor.h>
 #include <asm/thread_notify.h>
 #include <asm/stacktrace.h>
@@ -55,8 +56,6 @@ static const char *processor_modes[] = {
 static const char *isa_modes[] = {
   "ARM" , "Thumb" , "Jazelle", "ThumbEE"
 };
-
-extern void setup_mm_for_reboot(void);
 
 static volatile int hlt_counter;
 
@@ -320,12 +319,24 @@ void machine_halt(void)
 void machine_power_off(void)
 {
 	machine_shutdown();
+
+#ifdef CONFIG_SMP
+	preempt_enable();
+#endif
 	if (pm_power_off)
 		pm_power_off();
 }
 
 void machine_restart(char *cmd)
 {
+	/* Flush the console to make sure all the relevant messages make it
+	 * out to the console drivers */
+	arm_machine_flush_console();
+
+	/* Disable interrupts first */
+	local_irq_disable();
+	local_fiq_disable();
+
 	machine_shutdown();
 
 	/* Flush the console to make sure all the relevant messages make it

@@ -6,6 +6,8 @@
  * Author:
  *	Erik Gilling <konkers@google.com>
  *
+ * Copyright (c) 2011-2014, NVIDIA CORPORATION.  All rights reserved.
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -22,6 +24,7 @@
 
 #include <linux/types.h>
 #include <mach/irqs.h>
+#include <mach/pinmux.h>
 
 #define TEGRA_NR_GPIOS		INT_GPIO_NR
 
@@ -30,8 +33,25 @@ struct tegra_gpio_table {
 	bool	enable;	/* Enable for GPIO at init? */
 };
 
-void tegra_gpio_config(struct tegra_gpio_table *table, int num);
-void tegra_gpio_enable(int gpio);
-void tegra_gpio_disable(int gpio);
+struct gpio_init_pin_info {
+	char name[16];
+	int gpio_nr;
+	bool is_gpio;
+	bool is_input;
+	int value; /* Value if it is output*/
+};
 
+void tegra_gpio_config(struct tegra_gpio_table *table, int num);
+void tegra_gpio_init_configure(unsigned gpio, bool is_input, int value);
+void tegra_gpio_set_tristate(int gpio, enum tegra_tristate ts);
+int tegra_gpio_get_bank_int_nr(int gpio);
+int tegra_gpio_resume_init(void);
+int tegra_is_gpio(int);
+
+#ifdef CONFIG_PM_SLEEP
+void tegra11x_set_sleep_gpio(struct gpio_init_pin_info *config, int size);
+#else
+static inline void
+tegra11x_set_sleep_gpio(struct gpio_init_pin_info *config, int size) {}
+#endif
 #endif

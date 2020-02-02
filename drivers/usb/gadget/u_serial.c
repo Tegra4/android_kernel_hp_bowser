@@ -134,6 +134,7 @@ static unsigned	n_ports;
 
 
 
+#undef pr_vdebug
 #ifdef VERBOSE_DEBUG
 #ifndef pr_vdebug
 #define pr_vdebug(fmt, arg...) \

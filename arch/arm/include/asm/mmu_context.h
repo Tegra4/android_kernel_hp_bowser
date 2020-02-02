@@ -178,7 +178,19 @@ switch_mm(struct mm_struct *prev, struct mm_struct *next,
 		__flush_icache_all();
 #endif
 	if (!cpumask_test_and_set_cpu(cpu, mm_cpumask(next)) || prev != next) {
-		check_and_switch_context(next, tsk);
+#ifdef CONFIG_SMP
+		struct mm_struct **crt_mm = &per_cpu(current_mm, cpu);
+		*crt_mm = next;
+#endif
+		check_context(next);
+		cpu_switch_mm(next->pgd, next);
+#ifdef CONFIG_ARM_ERRATA_798181
+		/*
+		 * DMB required since we only send IPI to the other CPUs if
+		 * they run the same mm as the one being invalidated.
+		 */
+		dmb();
+#endif
 		if (cache_is_vivt())
 			cpumask_clear_cpu(cpu, mm_cpumask(prev));
 	}

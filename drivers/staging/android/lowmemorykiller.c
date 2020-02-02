@@ -65,6 +65,8 @@ static unsigned long lowmem_deathpending_timeout;
 			pr_info(x);			\
 	} while (0)
 
+#define CACHED_APP_MIN_ADJ	9
+#define CACHED_APP_MIN_SCORE_ADJ	((CACHED_APP_MIN_ADJ * OOM_SCORE_ADJ_MAX) / -OOM_DISABLE)
 static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 {
 	struct task_struct *tsk;
@@ -135,22 +137,28 @@ static int lowmem_shrink(struct shrinker *s, struct shrink_control *sc)
 		if (tasksize <= 0)
 			continue;
 		if (selected) {
-			if (oom_score_adj < selected_oom_score_adj)
-				continue;
-			if (oom_score_adj == selected_oom_score_adj &&
-			    tasksize <= selected_tasksize)
-				continue;
+			if (oom_score_adj >= CACHED_APP_MIN_SCORE_ADJ) {
+				if (tasksize <= selected_tasksize)
+					continue;
+			}
+			else{
+				if (oom_score_adj < selected_oom_score_adj)
+					continue;
+				if (oom_score_adj == selected_oom_score_adj &&
+				    tasksize <= selected_tasksize)
+					continue;
+			}
 		}
 		selected = p;
 		selected_tasksize = tasksize;
 		selected_oom_score_adj = oom_score_adj;
-		lowmem_print(2, "select '%s' (%d), adj %d, size %d, to kill\n",
+		lowmem_print(2, "select '%s' (%d), adj %hd, size %d, to kill\n",
 			     p->comm, p->pid, oom_score_adj, tasksize);
 	}
 	if (selected) {
-		lowmem_print(1, "Killing '%s' (%d), adj %d,\n" \
+		lowmem_print(1, "Killing '%s' (%d), adj %hd,\n" \
 				"   to free %ldkB on behalf of '%s' (%d) because\n" \
-				"   cache %ldkB is below limit %ldkB for oom_score_adj %d\n" \
+				"   cache %ldkB is below limit %ldkB for oom_score_adj %hd\n" \
 				"   Free memory is %ldkB above reserved\n",
 			     selected->comm, selected->pid,
 			     selected_oom_score_adj,

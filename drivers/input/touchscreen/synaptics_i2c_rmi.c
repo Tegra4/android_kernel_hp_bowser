@@ -1,6 +1,7 @@
 /* drivers/input/keyboard/synaptics_i2c_rmi.c
  *
  * Copyright (C) 2007 Google, Inc.
+ * Copyright (C) 2013, NVIDIA Corporation.  All Rights Reserved.
  *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
@@ -15,7 +16,6 @@
 
 #include <linux/module.h>
 #include <linux/delay.h>
-#include <linux/earlysuspend.h>
 #include <linux/hrtimer.h>
 #include <linux/i2c.h>
 #include <linux/input.h>
@@ -24,6 +24,11 @@
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/synaptics_i2c_rmi.h>
+
+#define ABS_DIFF(a, b)   (((a) > (b)) ? ((a) - (b)) : ((b) - (a)))
+
+/* Enable CPU boost when entering IRQ handler */
+#define ENABLE_CPU_BOOST
 
 static struct workqueue_struct *synaptics_wq;
 
@@ -45,15 +50,10 @@ struct synaptics_ts_data {
 	int snap_up[2];
 	uint32_t flags;
 	int reported_finger_count;
+	int last_pos[2][2];
 	int8_t sensitivity_adjust;
 	int (*power)(int on);
-	struct early_suspend early_suspend;
 };
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void synaptics_ts_early_suspend(struct early_suspend *h);
-static void synaptics_ts_late_resume(struct early_suspend *h);
-#endif
 
 static int synaptics_init_panel(struct synaptics_ts_data *ts)
 {
@@ -136,6 +136,7 @@ static void synaptics_ts_work_func(struct work_struct *work)
 				break;
 			} else {
 				int pos[2][2];
+				int rmpos_x, rmpos_y;
 				int f, a;
 				int base;
 				/* int x = buf[3] | (uint16_t)(buf[2] & 0x1f) << 8; */
@@ -193,9 +194,57 @@ static void synaptics_ts_work_func(struct work_struct *work)
 					if (ts->flags & SYNAPTICS_SWAP_XY)
 						swap(pos[f][0], pos[f][1]);
 				}
+
+				if (!finger) {
+					z = 0;
+					if (ts->reported_finger_count > 0) {
+						pos[0][0] = ts->last_pos[0][0];
+						pos[0][1] = ts->last_pos[0][1];
+					}
+					else
+						continue; /* skip touch noise */
+				}
+				finger = (finger == 7) ? 1 : finger; /* correct wrong finger count */
+				finger2_pressed = finger > 1;
+
+				input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, z);
+				input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, w);
+				input_report_abs(ts->input_dev, ABS_MT_POSITION_X, pos[0][0]);
+				input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, pos[0][1]);
+				input_mt_sync(ts->input_dev);
+				if (finger2_pressed) {
+					input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, z);
+					input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, w);
+					input_report_abs(ts->input_dev, ABS_MT_POSITION_X, pos[1][0]);
+					input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, pos[1][1]);
+					input_mt_sync(ts->input_dev);
+					ts->last_pos[1][0] = pos[1][0];
+					ts->last_pos[1][1] = pos[1][1];
+				} else if (ts->reported_finger_count > 1) {
+					/* check which point was removed */
+					if ((ABS_DIFF(pos[0][0],ts->last_pos[0][0]) +
+					ABS_DIFF(pos[0][1],ts->last_pos[0][1])) <
+					(ABS_DIFF(pos[0][0],ts->last_pos[1][0]) +
+					ABS_DIFF(pos[0][1],ts->last_pos[1][1]))) {
+						rmpos_x = ts->last_pos[1][0];
+						rmpos_y = ts->last_pos[1][1];
+					}
+					else {
+						rmpos_x = ts->last_pos[0][0];
+						rmpos_y = ts->last_pos[0][1];
+					}
+					input_report_abs(ts->input_dev, ABS_MT_TOUCH_MAJOR, 0);
+					input_report_abs(ts->input_dev, ABS_MT_WIDTH_MAJOR, 0);
+					input_report_abs(ts->input_dev, ABS_MT_POSITION_X, rmpos_x);
+					input_report_abs(ts->input_dev, ABS_MT_POSITION_Y, rmpos_y);
+					input_mt_sync(ts->input_dev);
+				}
+
 				if (z) {
 					input_report_abs(ts->input_dev, ABS_X, pos[0][0]);
 					input_report_abs(ts->input_dev, ABS_Y, pos[0][1]);
+					ts->last_pos[0][0] = pos[0][0];
+					ts->last_pos[0][1] = pos[0][1];
 				}
 				input_report_abs(ts->input_dev, ABS_PRESSURE, z);
 				input_report_abs(ts->input_dev, ABS_TOOL_WIDTH, w);
@@ -250,6 +299,11 @@ static irqreturn_t synaptics_ts_irq_handler(int irq, void *dev_id)
 	struct synaptics_ts_data *ts = dev_id;
 
 	/* printk("synaptics_ts_irq_handler\n"); */
+
+#ifdef ENABLE_CPU_BOOST
+	input_event(ts->input_dev, EV_MSC, MSC_ACTIVITY, 1);
+#endif
+
 	disable_irq_nosync(ts->client->irq);
 	queue_work(synaptics_wq, &ts->work);
 	return IRQ_HANDLED;
@@ -464,7 +518,6 @@ static int synaptics_ts_probe(
 	set_bit(EV_SYN, ts->input_dev->evbit);
 	set_bit(EV_KEY, ts->input_dev->evbit);
 	set_bit(BTN_TOUCH, ts->input_dev->keybit);
-	set_bit(BTN_2, ts->input_dev->keybit);
 	set_bit(EV_ABS, ts->input_dev->evbit);
 	inactive_area_left = inactive_area_left * max_x / 0x10000;
 	inactive_area_right = inactive_area_right * max_x / 0x10000;
@@ -515,6 +568,9 @@ static int synaptics_ts_probe(
 		printk(KERN_ERR "synaptics_ts_probe: Unable to register %s input device\n", ts->input_dev->name);
 		goto err_input_register_device_failed;
 	}
+#ifdef ENABLE_CPU_BOOST
+	input_set_capability(ts->input_dev, EV_MSC, MSC_ACTIVITY);
+#endif
 	if (client->irq) {
 		ret = request_irq(client->irq, synaptics_ts_irq_handler, irqflags, client->name, ts);
 		if (ret == 0) {
@@ -532,12 +588,6 @@ static int synaptics_ts_probe(
 		ts->timer.function = synaptics_ts_timer_func;
 		hrtimer_start(&ts->timer, ktime_set(1, 0), HRTIMER_MODE_REL);
 	}
-#ifdef CONFIG_HAS_EARLYSUSPEND
-	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
-	ts->early_suspend.suspend = synaptics_ts_early_suspend;
-	ts->early_suspend.resume = synaptics_ts_late_resume;
-	register_early_suspend(&ts->early_suspend);
-#endif
 
 	printk(KERN_INFO "synaptics_ts_probe: Start touchscreen %s in %s mode\n", ts->input_dev->name, ts->use_irq ? "interrupt" : "polling");
 
@@ -558,7 +608,7 @@ err_check_functionality_failed:
 static int synaptics_ts_remove(struct i2c_client *client)
 {
 	struct synaptics_ts_data *ts = i2c_get_clientdata(client);
-	unregister_early_suspend(&ts->early_suspend);
+
 	if (ts->use_irq)
 		free_irq(client->irq, ts);
 	else
@@ -568,6 +618,7 @@ static int synaptics_ts_remove(struct i2c_client *client)
 	return 0;
 }
 
+#if defined(CONFIG_PM)
 static int synaptics_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	int ret;
@@ -618,21 +669,6 @@ static int synaptics_ts_resume(struct i2c_client *client)
 
 	return 0;
 }
-
-#ifdef CONFIG_HAS_EARLYSUSPEND
-static void synaptics_ts_early_suspend(struct early_suspend *h)
-{
-	struct synaptics_ts_data *ts;
-	ts = container_of(h, struct synaptics_ts_data, early_suspend);
-	synaptics_ts_suspend(ts->client, PMSG_SUSPEND);
-}
-
-static void synaptics_ts_late_resume(struct early_suspend *h)
-{
-	struct synaptics_ts_data *ts;
-	ts = container_of(h, struct synaptics_ts_data, early_suspend);
-	synaptics_ts_resume(ts->client);
-}
 #endif
 
 static const struct i2c_device_id synaptics_ts_id[] = {
@@ -643,7 +679,7 @@ static const struct i2c_device_id synaptics_ts_id[] = {
 static struct i2c_driver synaptics_ts_driver = {
 	.probe		= synaptics_ts_probe,
 	.remove		= synaptics_ts_remove,
-#ifndef CONFIG_HAS_EARLYSUSPEND
+#if defined(CONFIG_PM)
 	.suspend	= synaptics_ts_suspend,
 	.resume		= synaptics_ts_resume,
 #endif

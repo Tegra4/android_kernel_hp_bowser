@@ -3,6 +3,17 @@
  *
  * Copyright (C) 2003,2004 Hewlett-Packard Company
  *
+ * Copyright (c) 2013, NVIDIA CORPORATION, All rights reserved.
+ *
+ * This software is licensed under the terms of the GNU General Public
+ * License version 2, as published by the Free Software Foundation, and
+ * may be copied, distributed, and modified under those terms.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
  */
 
 #include <linux/module.h>
@@ -24,6 +35,25 @@ static const char *const backlight_types[] = {
 	[BACKLIGHT_PLATFORM] = "platform",
 	[BACKLIGHT_FIRMWARE] = "firmware",
 };
+
+struct list_head backlight_devices;
+
+struct backlight_device *get_backlight_device_by_name(char *name)
+{
+	struct list_head *ptr;
+	struct backlight_device *entry = NULL;
+
+	if (!name)
+		return NULL;
+
+	list_for_each(ptr, &backlight_devices) {
+		entry = list_entry(ptr, struct backlight_device, devices_list);
+		if (strcmp(dev_name(&entry->dev), name) == 0)
+			return entry;
+	}
+	return entry;
+}
+EXPORT_SYMBOL(get_backlight_device_by_name);
 
 #if defined(CONFIG_FB) || (defined(CONFIG_FB_MODULE) && \
 			   defined(CONFIG_BACKLIGHT_CLASS_DEVICE_MODULE))
@@ -332,6 +362,7 @@ struct backlight_device *backlight_device_register(const char *name,
 
 	new_bd->ops = ops;
 
+	list_add_tail(&new_bd->devices_list, &backlight_devices);
 #ifdef CONFIG_PMAC_BACKLIGHT
 	mutex_lock(&pmac_backlight_mutex);
 	if (!pmac_backlight)
@@ -386,6 +417,8 @@ static int __init backlight_class_init(void)
 	backlight_class->dev_attrs = bl_device_attributes;
 	backlight_class->suspend = backlight_suspend;
 	backlight_class->resume = backlight_resume;
+
+	INIT_LIST_HEAD(&backlight_devices);
 	return 0;
 }
 

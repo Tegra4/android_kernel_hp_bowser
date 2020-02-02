@@ -41,6 +41,7 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
+#include <linux/rtc.h>
 
 #include <asm/uaccess.h>
 
@@ -998,14 +999,30 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 				/* Add the current time stamp */
 				char tbuf[50], *tp;
 				unsigned tlen;
-				unsigned long long t;
-				unsigned long nanosec_rem;
 
-				t = cpu_clock(printk_cpu);
-				nanosec_rem = do_div(t, 1000000000);
-				tlen = sprintf(tbuf, "[%5lu.%06lu] ",
-						(unsigned long) t,
-						nanosec_rem / 1000);
+				if (system_state == SYSTEM_BOOTING) {
+					unsigned long long t;
+					unsigned long nanosec_rem;
+
+					t = cpu_clock(printk_cpu);
+					nanosec_rem = do_div(t, 1000000000);
+					tlen = sprintf(tbuf, "[%5lu.%06lu] ",
+						       (unsigned long) t,
+						       nanosec_rem / 1000);
+				} else {
+					struct timespec ts;
+					struct tm tm;
+
+					ts = __current_kernel_time();
+					time_to_tm(ts.tv_sec, -sys_tz.tz_minuteswest * 60, &tm);
+					tlen = sprintf(tbuf, "[%02d-%02d %02d:%02d:%02d.%03lu] ",
+							tm.tm_mon+1,
+							tm.tm_mday,
+							tm.tm_hour,
+							tm.tm_min,
+							tm.tm_sec,
+							(unsigned long) ts.tv_nsec/1000000);
+				}
 
 				for (tp = tbuf; tp < tbuf + tlen; tp++)
 					emit_log_char(*tp);
@@ -1025,7 +1042,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 	 * Try to acquire and then immediately release the
 	 * console semaphore. The release will do all the
 	 * actual magic (print out buffers, wake up klogd,
-	 * etc). 
+	 * etc).
 	 *
 	 * The console_trylock_for_printk() function
 	 * will release 'logbuf_lock' regardless of whether it

@@ -17,5 +17,10 @@
 #include <asm-generic/mutex-xchg.h>
 #else
 #include <asm-generic/mutex-dec.h>
+<<<<<<< HEAD
+#endif
+=======
+>>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 #endif
 #endif
+

@@ -20,7 +20,7 @@ static DEFINE_RAW_SPINLOCK(cpu_asid_lock);
 unsigned int cpu_last_asid = ASID_FIRST_VERSION;
 
 #ifdef CONFIG_ARM_LPAE
-void cpu_set_reserved_ttbr0(void)
+static void cpu_set_reserved_ttbr0(void)
 {
 	unsigned long ttbl = __pa(swapper_pg_dir);
 	unsigned long ttbh = 0;
@@ -36,7 +36,7 @@ void cpu_set_reserved_ttbr0(void)
 	isb();
 }
 #else
-void cpu_set_reserved_ttbr0(void)
+static void cpu_set_reserved_ttbr0(void)
 {
 	u32 ttb;
 	/* Copy TTBR1 into TTBR0 */
@@ -62,6 +62,7 @@ static void flush_context(void)
 {
 	cpu_set_reserved_ttbr0();
 	local_flush_tlb_all();
+	dummy_flush_tlb_a15_erratum();
 	if (icache_is_vivt_asid_tagged()) {
 		__flush_icache_all();
 		dsb();

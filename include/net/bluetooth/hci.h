@@ -37,6 +37,7 @@
 #define HCI_DEV_DOWN			4
 #define HCI_DEV_SUSPEND			5
 #define HCI_DEV_RESUME			6
+#define HCI_DEV_WRITE 			7
 
 /* HCI notify events */
 #define HCI_NOTIFY_CONN_ADD		1
@@ -1394,9 +1395,11 @@ struct hci_conn_info {
 	__u8     out;
 	__u16    state;
 	__u32    link_mode;
+#ifdef CONFIG_ANDROID
 	__u32    mtu;
 	__u32    cnt;
 	__u32    pkts;
+#endif
 };
 
 struct hci_dev_req {
