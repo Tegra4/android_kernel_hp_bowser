@@ -34,6 +34,10 @@
 
 #include "tpa6130a2.h"
 
+#ifndef CONFIG_MACH_BOWSER
+#define TPA61XXA2_REGULATOR_REQUIRED 1
+#endif
+
 enum tpa_model {
 	TPA6130A2,
 	TPA6140A2,
@@ -382,6 +386,7 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 	data->regs[TPA6130A2_REG_VOL_MUTE] =	TPA6130A2_MUTE_R |
 						TPA6130A2_MUTE_L;
 
+#ifdef TPA61XXA2_REGULATOR_REQUIRED
 	switch (data->id) {
 	default:
 		dev_warn(dev, "Unknown TPA model (%d). Assuming 6130A2\n",
@@ -393,6 +398,8 @@ static int __devinit tpa6130a2_probe(struct i2c_client *client,
 		regulator = "AVdd";
 		break;
 	}
+#endif /* TPA61XXA2_REGULATOR_REQUIRED */
+
 
 	ret = tpa6130a2_power(1);
 	if (ret != 0)

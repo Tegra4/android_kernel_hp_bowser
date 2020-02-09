@@ -84,7 +84,9 @@
 #include "common.h"
 #include "tegra-board-id.h"
 #include "board-touch.h"
+#ifdef CONFIG_SND_SOC_TI_TPA6130A2
 #include <sound/tpa6130a2-plat.h>
+#endif
 
 int bowser_panel_resolution;
 bool panel_initialized = 0;
@@ -270,18 +272,21 @@ static struct tegra_i2c_platform_data bowser_i2c5_platform_data = {
 	.arb_recovery = arb_lost_recovery,
 };
 
+#ifdef CONFIG_SND_SOC_TI_TPA6130A2
 static struct tpa6130a2_platform_data bowser_tpa6130a2_data __initdata_or_module = {
-	.power_gpio		= TEGRA_GPIO_PR4,
+	/*.power_gpio		= TEGRA_GPIO_PR4, */
 };
 
-static struct i2c_board_info __initdata rt5640_board_info[] = {
-	{
-		I2C_BOARD_INFO("rt5640", 0x1c),
-	},
+static struct i2c_board_info __initdata tpa6130a2_board_info[] = {
 	{
 		I2C_BOARD_INFO("tpa6130a2", 0x60),
 		.platform_data = &bowser_tpa6130a2_data,
 	},
+};
+#endif
+
+static struct i2c_board_info __initdata rt5640_board_info = {
+	I2C_BOARD_INFO("rt5640", 0x1c),
 };
 
 #ifdef CONFIG_AUO_EDID
@@ -307,7 +312,10 @@ static void bowser_i2c_init(void)
 	platform_device_register(&tegra11_i2c_device2);
 	platform_device_register(&tegra11_i2c_device1);
 
-	i2c_register_board_info(0, rt5640_board_info, 2);
+#ifdef CONFIG_SND_SOC_TI_TPA6130A2
+	i2c_register_board_info(0, &tpa6130a2_board_info, 1);
+#endif
+	i2c_register_board_info(0, rt5640_board_info, 1);
 #ifdef CONFIG_AUO_EDID
 	i2c_register_board_info(0, &AUO101_board_info, 1);
 #endif /* CONFIG_AUO_EDID */
