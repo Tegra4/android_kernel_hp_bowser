@@ -423,9 +423,6 @@ void alarm_restart(struct alarm *alarm)
 	hrtimer_set_expires(&alarm->timer, alarm->node.expires);
 	hrtimer_restart(&alarm->timer);
 	alarmtimer_enqueue(base, alarm);
-=======
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
-	spin_unlock_irqrestore(&base->lock, flags);
 	return ret;
 }
 
