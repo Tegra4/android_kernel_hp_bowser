@@ -101,17 +101,11 @@ struct cpuidle_device {
 	struct list_head 	device_list;
 	struct kobject		kobj;
 	struct completion	kobj_unregister;
-<<<<<<< HEAD
 
 #ifdef CONFIG_ARCH_NEEDS_CPU_IDLE_COUPLED
 	int			safe_state_index;
 	cpumask_t		coupled_cpus;
 	struct cpuidle_coupled	*coupled;
-#endif
-=======
-	void			*governor_data;
-	int			safe_state_index;
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 };
 
 DECLARE_PER_CPU(struct cpuidle_device *, cpuidle_devices);
