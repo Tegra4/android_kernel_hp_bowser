@@ -32,12 +32,8 @@ static void try_to_suspend(struct work_struct *work)
 
 	mutex_lock(&autosleep_lock);
 
-<<<<<<< HEAD
 	if (!pm_save_wakeup_count(initial_count) ||
 		system_state != SYSTEM_RUNNING) {
-=======
-	if (!pm_save_wakeup_count(initial_count)) {
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 		mutex_unlock(&autosleep_lock);
 		goto out;
 	}
@@ -71,11 +67,7 @@ static DECLARE_WORK(suspend_work, try_to_suspend);
 
 void queue_up_suspend_work(void)
 {
-<<<<<<< HEAD
 	if (autosleep_state > PM_SUSPEND_ON)
-=======
-	if (!work_pending(&suspend_work) && autosleep_state > PM_SUSPEND_ON)
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 		queue_work(autosleep_wq, &suspend_work);
 }
 

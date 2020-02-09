@@ -19,10 +19,7 @@
 #include <linux/kref.h>
 #include <linux/ktime.h>
 #include <linux/list.h>
-<<<<<<< HEAD
 #include <linux/seq_file.h>
-=======
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 #include <linux/spinlock.h>
 #include <linux/wait.h>
 
@@ -44,24 +41,14 @@ struct sync_fence;
  *			 -1 if a will signabl before b
  * @free_pt:		called before sync_pt is freed
  * @release_obj:	called before sync_timeline is freed
-<<<<<<< HEAD
  * @print_obj:		deprecated
  * @print_pt:		deprecated
-=======
- * @print_obj:		print aditional debug information about sync_timeline.
- *			  should not print a newline
- * @print_pt:		print aditional debug information about sync_pt.
- *			  should not print a newline
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
  * @fill_driver_data:	write implmentation specific driver data to data.
  *			  should return an error if there is not enough room
  *			  as specified by size.  This information is returned
  *			  to userspace by SYNC_IOC_FENCE_INFO.
-<<<<<<< HEAD
  * @timeline_value_str: fill str with the value of the sync_timeline's counter
  * @pt_value_str:	fill str with the value of the sync_pt
-=======
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
  */
 struct sync_timeline_ops {
 	const char *driver_name;
@@ -81,24 +68,15 @@ struct sync_timeline_ops {
 	/* optional */
 	void (*release_obj)(struct sync_timeline *sync_timeline);
 
-<<<<<<< HEAD
 	/* deprecated */
 	void (*print_obj)(struct seq_file *s,
 			  struct sync_timeline *sync_timeline);
 
 	/* deprecated */
-=======
-	/* optional */
-	void (*print_obj)(struct seq_file *s,
-			  struct sync_timeline *sync_timeline);
-
-	/* optional */
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 	void (*print_pt)(struct seq_file *s, struct sync_pt *sync_pt);
 
 	/* optional */
 	int (*fill_driver_data)(struct sync_pt *syncpt, void *data, int size);
-<<<<<<< HEAD
 
 	/* optional */
 	void (*timeline_value_str)(struct sync_timeline *timeline, char *str,
@@ -106,8 +84,6 @@ struct sync_timeline_ops {
 
 	/* optional */
 	void (*pt_value_str)(struct sync_pt *pt, char *str, int size);
-=======
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
 };
 
 /**

@@ -3243,10 +3243,9 @@ static int __devinit azx_create(struct snd_card *card, struct pci_dev *pci,
 			dma_bits = 32;
 		if (!pci_set_dma_mask(pci, DMA_BIT_MASK(dma_bits))) {
 			pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(dma_bits));
-		else {
+		} else {
 			pci_set_dma_mask(pci, DMA_BIT_MASK(32));
 			pci_set_consistent_dma_mask(pci, DMA_BIT_MASK(32));
-		}
 	}
 
 	/* read number of streams from GCAP register instead of using
