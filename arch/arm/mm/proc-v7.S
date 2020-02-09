@@ -244,8 +244,7 @@ ENTRY(cpu_v7_do_suspend)
 	save_wpt	c1
 	save_wpt	c0
 #endif
-	ldmfd	sp!, {r3 - r10, pc}
->>>>>>> 514cb600f42037349cfcb126faa3d443061c75f3
+	ldmfd	sp!, {r3 - r11, pc}
 ENDPROC(cpu_v7_do_suspend)
 
 ENTRY(cpu_v7_do_resume)
